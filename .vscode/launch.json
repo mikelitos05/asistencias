@@ -9,6 +9,20 @@
             "projectName": "asistencias",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node-terminal",
+            "request": "launch",
+            "name": "React Frontend",
+            "command": "npm start",
+            "cwd": "${workspaceFolder}/frontend",
+            "postDebugTask": "open-opera"
+        }
+    ],
+    "compounds": [
+        {
+        "name": "Run All (Backend + Frontend)",
+        "configurations": ["Spring Boot-AsistenciasApplication<asistencias>","React Frontend"]
         }
     ]
 }
