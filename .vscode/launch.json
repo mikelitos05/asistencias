@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-AsistenciasApplication<asistencias>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ambu.asistencias.AsistenciasApplication",
+            "projectName": "asistencias",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
