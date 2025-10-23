@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 public class User {
 
     public enum Role {
-        SERVER,      // person doing social service
         ADMIN,
         SUPER_ADMIN
     }
@@ -44,10 +43,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "park_id")
-    private Park park;
 
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate = LocalDateTime.now();

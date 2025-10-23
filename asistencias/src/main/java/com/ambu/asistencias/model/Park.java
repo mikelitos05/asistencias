@@ -26,9 +26,9 @@ public class Park {
 
     @NotBlank
     @Size(max = 50)
-    @Column(name = "acronym", nullable = false, unique = true, length = 50)
-    private String acronym;
+    @Column(name = "abbreviation", nullable = false, unique = true, length = 50)
+    private String abbreviation;
 
     @OneToMany(mappedBy = "park", cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<User> users;
+    private List<SocialServer> socialServers;
 }

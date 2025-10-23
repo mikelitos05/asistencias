@@ -27,8 +27,8 @@ public class Attendance {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "social_server_id", nullable = false)
+    private SocialServer socialServer;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,6 +49,4 @@ public class Attendance {
     @Column(name = "photo_path", nullable = false, length = 255)
     private String photoPath;
 
-    @Column(columnDefinition = "TEXT")
-    private String notes;
 }
