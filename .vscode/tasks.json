@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "open-opera",
+      "type": "shell",
+      "command": "open -a 'Opera GX' http://localhost:3000",
+      "problemMatcher": []
+    }
+  ]
+}
