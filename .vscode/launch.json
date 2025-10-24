@@ -2,7 +2,7 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-AsistenciasApplication<asistencias>",
+            "name": "Spring Boot Backend",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "mainClass": "com.ambu.asistencias.AsistenciasApplication",
@@ -22,7 +22,7 @@
     "compounds": [
         {
         "name": "Run All (Backend + Frontend)",
-        "configurations": ["Spring Boot-AsistenciasApplication<asistencias>","React Frontend"]
+        "configurations": ["Spring Boot Backend","React Frontend"]
         }
     ]
 }
