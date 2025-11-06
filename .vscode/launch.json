@@ -2,13 +2,27 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-AsistenciasApplication<asistencias>",
+            "name": "Spring Boot Backend",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "mainClass": "com.ambu.asistencias.AsistenciasApplication",
             "projectName": "asistencias",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node-terminal",
+            "request": "launch",
+            "name": "React Frontend",
+            "command": "npm start",
+            "cwd": "${workspaceFolder}/frontend",
+            "postDebugTask": "open-opera"
+        }
+    ],
+    "compounds": [
+        {
+        "name": "Run All (Backend + Frontend)",
+        "configurations": ["Spring Boot Backend","React Frontend"]
         }
     ]
 }
