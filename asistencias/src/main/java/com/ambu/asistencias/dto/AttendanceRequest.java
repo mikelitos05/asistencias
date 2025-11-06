@@ -1,6 +1,5 @@
 package com.ambu.asistencias.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AttendanceRequest {
     
-    @Email(message = "El correo electrónico debe tener un formato válido")
-    @NotNull(message = "El correo electrónico es obligatorio")
-    private String email;
+    @NotNull(message = "El folio es obligatorio")
+    private Long id;
     
     @NotNull(message = "El ID del parque es obligatorio")
     private Long parkId;
