@@ -18,6 +18,7 @@ public class AttendanceResponse {
     private String parkName;
     private LocalDateTime timestamp;
     private String type;
+    private String photoPath;
     private String message;
 }
 

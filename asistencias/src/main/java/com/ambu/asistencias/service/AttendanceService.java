@@ -1,9 +1,18 @@
 package com.ambu.asistencias.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ambu.asistencias.dto.AttendanceRequest;
 import com.ambu.asistencias.dto.AttendanceResponse;
@@ -29,10 +38,17 @@ public class AttendanceService {
     private final SocialServerRepository socialServerRepository;
     private final ParkRepository parkRepository;
 
+    @Value("${app.upload.dir:uploads/photos}")
+    private String uploadDir;
+
     public AttendanceResponse registerAttendance(AttendanceRequest request) {
+        return registerAttendance(request, null);
+    }
+
+    public AttendanceResponse registerAttendance(AttendanceRequest request, MultipartFile photo) {
         log.info("Registrando asistencia para folio: {} y parque ID: {}", request.getId(), request.getParkId());
 
-        // Buscar SocialServer por email
+        // Buscar SocialServer por id
         SocialServer socialServer = socialServerRepository.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró servidor social por el folio: " + request.getId()));
@@ -42,9 +58,38 @@ public class AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un parque con el ID: " + request.getParkId()));
 
-
         // Determinar el tipo de asistencia
         AttendanceType attendanceType = determineAttendanceType(request.getType());
+
+        // Manejar la subida de la foto (si existe)
+        String photoPath = "uploads/photos/default-photo.png";
+        if (photo == null || photo.isEmpty()) {
+            throw new ResourceNotFoundException(
+                        "La foto de asistencia es obligatoria.");
+        }
+            try {
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+                Files.createDirectories(uploadPath);
+
+                String originalFilename = StringUtils.cleanPath(photo.getOriginalFilename());
+                String extension = "";
+                int idx = originalFilename.lastIndexOf('.');
+                if (idx > 0) {
+                    extension = originalFilename.substring(idx);
+                }
+                String filename = "attendance-" + UUID.randomUUID() + extension;
+                
+                Path target = uploadPath.resolve(filename);
+
+                Files.copy(photo.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+                // Save relative path
+                photoPath = uploadDir + "/" + filename;
+            } catch (IOException e) {
+                log.error("Error guardando la foto de asistencia", e);
+                throw new RuntimeException("No se pudo guardar la foto de asistencia", e);
+            }
+        
 
         // Crear y guardar la asistencia
         Attendance attendance = Attendance.builder()
@@ -52,7 +97,7 @@ public class AttendanceService {
                 .park(park)
                 .timestamp(LocalDateTime.now())
                 .type(attendanceType)
-                .photoPath("default-photo-path") // TODO: Implementar subida de fotos si es necesario
+                .photoPath(photoPath)
                 .build();
 
         Attendance savedAttendance = attendanceRepository.save(attendance);
@@ -71,6 +116,7 @@ public class AttendanceService {
                 .timestamp(savedAttendance.getTimestamp())
                 .type(savedAttendance.getType().name())
                 .message(message)
+                .photoPath(savedAttendance.getPhotoPath())
                 .build();
     }
 
@@ -85,7 +131,6 @@ public class AttendanceService {
                         "Ponga un tipo de entrada valido: " + type);
         }
     }
-
 
 }
 

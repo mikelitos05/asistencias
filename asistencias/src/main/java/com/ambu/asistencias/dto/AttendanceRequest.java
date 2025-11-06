@@ -18,6 +18,5 @@ public class AttendanceRequest {
     @NotNull(message = "El ID del parque es obligatorio")
     private Long parkId;
     
-    // Opcional: tipo de asistencia, si no se envía se determina automáticamente
     private String type; // "CHECK_IN" o "CHECK_OUT"
 }
