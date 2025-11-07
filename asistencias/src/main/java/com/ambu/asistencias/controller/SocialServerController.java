@@ -2,7 +2,6 @@ package com.ambu.asistencias.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("${api.prefix}/servidores-sociales")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // Permitir CORS para desarrollo, ajustar en producción
 public class SocialServerController {
 
     private final SocialServerService socialServerService;
