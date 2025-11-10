@@ -27,6 +27,7 @@ function App() {
 export default App;
 */
 
+/*
 import axios from "axios";
 import { useEffect, useState } from "react";
 
@@ -42,6 +43,20 @@ function App() {
   return (
     <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>{msg}</h1>
+    </div>
+  );
+}
+
+export default App;
+*/
+
+import React from "react";
+import AttendanceForm from "./AttendanceForm";
+
+function App() {
+  return (
+    <div>
+      <AttendanceForm />
     </div>
   );
 }
