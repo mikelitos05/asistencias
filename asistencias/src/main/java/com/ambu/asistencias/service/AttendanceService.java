@@ -6,7 +6,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,20 @@ public class AttendanceService {
 
     public AttendanceResponse registerAttendance(AttendanceRequest request) {
         return registerAttendance(request, null);
+    }
+
+    public List<AttendanceResponse> getAllAttendances() {
+        List<Attendance> attendances = attendanceRepository.findAll();
+        return attendances.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public AttendanceResponse getAttendanceById(Long id) {
+        Attendance attendance = attendanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró una asistencia con el ID: " + id));
+        return mapToResponse(attendance);
     }
 
     public AttendanceResponse registerAttendance(AttendanceRequest request, MultipartFile photo) {
@@ -103,20 +119,23 @@ public class AttendanceService {
         Attendance savedAttendance = attendanceRepository.save(attendance);
         log.info("Asistencia registrada exitosamente con ID: {}", savedAttendance.getId());
 
-        // Construir respuesta
-        String message = attendanceType == AttendanceType.CHECK_IN 
+        return mapToResponse(savedAttendance);
+    }
+
+    private AttendanceResponse mapToResponse(Attendance attendance) {
+        String message = attendance.getType() == AttendanceType.CHECK_IN 
                 ? "Entrada registrada exitosamente" 
                 : "Salida registrada exitosamente";
 
         return AttendanceResponse.builder()
-                .id(savedAttendance.getId())
-                .email(socialServer.getEmail())
-                .socialServerName(socialServer.getName())
-                .parkName(park.getParkName())
-                .timestamp(savedAttendance.getTimestamp())
-                .type(savedAttendance.getType().name())
+                .id(attendance.getId())
+                .email(attendance.getSocialServer().getEmail())
+                .socialServerName(attendance.getSocialServer().getName())
+                .parkName(attendance.getPark().getParkName())
+                .timestamp(attendance.getTimestamp())
+                .type(attendance.getType().name())
                 .message(message)
-                .photoPath(savedAttendance.getPhotoPath())
+                .photoPath(attendance.getPhotoPath())
                 .build();
     }
 
