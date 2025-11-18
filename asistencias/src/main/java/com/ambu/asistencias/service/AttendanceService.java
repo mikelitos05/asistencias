@@ -61,6 +61,19 @@ public class AttendanceService {
         return mapToResponse(attendance);
     }
 
+    public List<AttendanceResponse> getAttendancesBySocialServerId(Long socialServerId) {
+        log.info("Obteniendo asistencias para servidor social con ID: {}", socialServerId);
+        
+        SocialServer socialServer = socialServerRepository.findById(socialServerId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró un servidor social con el ID: " + socialServerId));
+        
+        List<Attendance> attendances = attendanceRepository.findBySocialServerOrderByTimestampDesc(socialServer);
+        return attendances.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public AttendanceResponse registerAttendance(AttendanceRequest request, MultipartFile photo) {
         log.info("Registrando asistencia para folio: {} y parque ID: {}", request.getId(), request.getParkId());
 

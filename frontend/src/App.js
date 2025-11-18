@@ -1,63 +1,75 @@
-//App.js original
-/*
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import AttendanceForm from './pages/AttendanceForm';
+import ParksPage from './pages/admin/ParksPage';
+import SocialServersPage from './pages/admin/SocialServersPage';
+import AttendancesPage from './pages/admin/AttendancesPage';
+import UsersPage from './pages/admin/UsersPage';
+import { ROLES } from './utils/constants';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/login" element={<Login />} />
+          <Route 
+            path="/asistencias" 
+            element={
+              <Layout>
+                <AttendanceForm />
+              </Layout>
+            } 
+          />
 
-export default App;
-*/
+          {/* Rutas protegidas para ADMIN y SUPER_ADMIN */}
+          <Route
+            path="/admin/parques"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+                <ParksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/servidores-sociales"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+                <SocialServersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/asistencias"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+                <AttendancesPage />
+              </ProtectedRoute>
+            }
+          />
 
-/*
-import axios from "axios";
-import { useEffect, useState } from "react";
+          {/* Rutas protegidas solo para SUPER_ADMIN */}
+          <Route
+            path="/admin/usuarios"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
 
-function App() {
-  const [msg, setMsg] = useState("Loading...");
-
-  useEffect(() => {
-    axios.get("http://localhost:8080/api/test")
-      .then(res => setMsg(res.data))
-      .catch(() => setMsg("Backend connection failed"));
-  }, []);
-
-  return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>{msg}</h1>
-    </div>
-  );
-}
-
-export default App;
-*/
-
-import React from "react";
-import AttendanceForm from "./AttendanceForm";
-
-function App() {
-  return (
-    <div>
-      <AttendanceForm />
-    </div>
+          {/* Ruta por defecto */}
+          <Route path="/" element={<Navigate to="/asistencias" replace />} />
+          <Route path="*" element={<Navigate to="/asistencias" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

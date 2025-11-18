@@ -1,0 +1,101 @@
+.attendance-list {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.attendances-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.attendances-table thead {
+  background-color: #f8f9fa;
+}
+
+.attendances-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.attendances-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.attendances-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+}
+
+.user-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  padding: 0;
+}
+
+.user-link:hover {
+  color: #5568d3;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.type-badge.check-in {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.type-badge.check-out {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.photo-link-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+}
+
+.photo-link-btn:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .attendances-table {
+    font-size: 0.9rem;
+  }
+
+  .attendances-table th,
+  .attendances-table td {
+    padding: 0.5rem;
+  }
+}
+

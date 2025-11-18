@@ -47,6 +47,14 @@ public class AttendanceController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/servidor-social/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<List<AttendanceResponse>> getAttendancesBySocialServerId(@PathVariable Long id) {
+        log.info("Solicitud de asistencias para servidor social con ID: {}", id);
+        List<AttendanceResponse> response = attendanceService.getAttendancesBySocialServerId(id);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<AttendanceResponse> registerAttendance(
             @Valid @ModelAttribute AttendanceRequest request,

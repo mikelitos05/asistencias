@@ -1,0 +1,165 @@
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 200px);
+  padding: 2rem;
+}
+
+.attendance-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  width: 150px;
+  margin-bottom: 1rem;
+}
+
+.attendance-form h2 {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  width: 100%;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.attendance-form input[type="number"],
+.attendance-form input[type="text"],
+.attendance-form select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.attendance-form input:focus,
+.attendance-form select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.image-preview {
+  width: 100%;
+  height: 150px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #aaa;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  background-color: #f9f9f9;
+}
+
+.image-preview img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.upload-btn {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  width: 100%;
+  text-align: center;
+}
+
+.upload-btn:hover {
+  background: #5568d3;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 1rem;
+  background-color: #fee;
+  color: #c33;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 100%;
+  text-align: center;
+}
+
+.success-message {
+  margin-top: 1rem;
+  background-color: #efe;
+  color: #3c3;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 100%;
+  text-align: center;
+}
+
+/* Responsive (mobile) */
+@media (max-width: 480px) {
+  .attendance-form {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .logo {
+    width: 120px;
+  }
+
+  .attendance-form h2 {
+    font-size: 1rem;
+  }
+}
+
