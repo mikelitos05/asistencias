@@ -1,0 +1,58 @@
+.time-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.time-picker-label {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.time-picker-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-select {
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 70px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 35px;
+}
+
+.time-select:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.time-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.time-separator {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #667eea;
+    margin: 0 4px;
+}
+
+/* Custom scrollbar for dropdown */
+.time-select option {
+    padding: 8px;
+}

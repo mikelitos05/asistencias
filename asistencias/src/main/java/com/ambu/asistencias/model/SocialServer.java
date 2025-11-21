@@ -37,23 +37,15 @@ public class SocialServer {
     @JoinColumn(name = "park_id", nullable = false)
     private Park park;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id", nullable = false)
+    private Schedule schedule;
+
     @NotBlank
     @Size(max = 100)
     @Column(nullable = false, length = 100)
     private String school;
-
-    @NotBlank
-    @Size(max = 100)
-    @Column(nullable = false, length = 100)
-    private String program;
-
-    @NotNull
-    @Column(name = "start_time", nullable = false)
-    private LocalTime startTime;
-
-    @NotNull
-    @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
 
     @NotNull
     @Column(name = "total_hours_required", nullable = false)

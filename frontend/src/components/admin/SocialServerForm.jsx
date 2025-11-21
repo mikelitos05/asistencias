@@ -1,35 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { parkService } from '../../services/parkService';
 import './SocialServerForm.css';
 
-const SocialServerForm = ({ socialServer, parks, onSubmit, onCancel }) => {
+const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
     parkId: '',
     school: '',
-    program: '',
-    startTime: '',
-    endTime: '',
+    scheduleId: '',
     totalHours: '',
   });
+
+  const [selectedProgramId, setSelectedProgramId] = useState('');
+  const [availableSchedules, setAvailableSchedules] = useState([]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (socialServer) {
+      // If editing, we need to find the program and schedule from the server data
+      // Assuming socialServer has scheduleId or we can derive it.
+      // The backend response for SocialServer currently returns program name and times, but not IDs directly in the flat response.
+      // We might need to update the backend to return scheduleId and programId in the response.
+      // For now, let's assume the user has to re-select if editing, or we update the backend response.
+      // Let's update the backend response to include scheduleId and programId.
+
       setFormData({
         email: socialServer.email || '',
         name: socialServer.name || '',
         parkId: socialServer.parkId || '',
         school: socialServer.school || '',
-        program: socialServer.program || '',
-        startTime: socialServer.startTime || '',
-        endTime: socialServer.endTime || '',
+        scheduleId: socialServer.scheduleId || '', // Need to ensure backend sends this
         totalHours: socialServer.totalHoursRequired || '',
       });
+
+      // If we have programId, set it
+      if (socialServer.programId) {
+        setSelectedProgramId(socialServer.programId);
+      }
     }
   }, [socialServer]);
+
+  useEffect(() => {
+    if (selectedProgramId) {
+      const program = programs.find(p => p.id === parseInt(selectedProgramId));
+      if (program) {
+        setAvailableSchedules(program.schedules || []);
+      } else {
+        setAvailableSchedules([]);
+      }
+    } else {
+      setAvailableSchedules([]);
+    }
+  }, [selectedProgramId, programs]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,13 +60,15 @@ const SocialServerForm = ({ socialServer, parks, onSubmit, onCancel }) => {
       ...prev,
       [name]: value,
     }));
-    // Limpiar error del campo
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleProgramChange = (e) => {
+    const programId = e.target.value;
+    setSelectedProgramId(programId);
+    setFormData(prev => ({ ...prev, scheduleId: '' })); // Reset schedule when program changes
   };
 
   const validate = () => {
@@ -52,14 +77,10 @@ const SocialServerForm = ({ socialServer, parks, onSubmit, onCancel }) => {
     if (!formData.name) newErrors.name = 'El nombre es obligatorio';
     if (!formData.parkId) newErrors.parkId = 'El parque es obligatorio';
     if (!formData.school) newErrors.school = 'La escuela es obligatoria';
-    if (!formData.program) newErrors.program = 'El programa es obligatorio';
-    if (!formData.startTime) newErrors.startTime = 'La hora de inicio es obligatoria';
-    if (!formData.endTime) newErrors.endTime = 'La hora de fin es obligatoria';
+    if (!selectedProgramId) newErrors.program = 'El programa es obligatorio';
+    if (!formData.scheduleId) newErrors.scheduleId = 'El horario es obligatorio';
     if (!formData.totalHours || formData.totalHours < 1) {
       newErrors.totalHours = 'Las horas totales deben ser al menos 1';
-    }
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
-      newErrors.endTime = 'La hora de fin debe ser posterior a la hora de inicio';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -145,51 +166,53 @@ const SocialServerForm = ({ socialServer, parks, onSubmit, onCancel }) => {
 
           <div className="form-group">
             <label>Programa *</label>
-            <input
-              type="text"
-              name="program"
-              value={formData.program}
-              onChange={handleChange}
+            <select
+              value={selectedProgramId}
+              onChange={handleProgramChange}
               required
-            />
+            >
+              <option value="">Seleccione un programa</option>
+              {programs
+                .filter(p => !formData.parkId || p.park.id === parseInt(formData.parkId)) // Filter by park if selected
+                .map(program => (
+                  <option key={program.id} value={program.id}>
+                    {program.name} (Capacidad: {program.currentCapacity})
+                  </option>
+                ))}
+            </select>
             {errors.program && <span className="error">{errors.program}</span>}
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Hora de Inicio *</label>
-              <input
-                type="time"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleChange}
-                required
-              />
-              {errors.startTime && <span className="error">{errors.startTime}</span>}
-            </div>
-            <div className="form-group">
-              <label>Hora de Fin *</label>
-              <input
-                type="time"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleChange}
-                required
-              />
-              {errors.endTime && <span className="error">{errors.endTime}</span>}
-            </div>
-            <div className="form-group">
-              <label>Horas Totales Requeridas *</label>
-              <input
-                type="number"
-                name="totalHours"
-                value={formData.totalHours}
-                onChange={handleChange}
-                min="1"
-                required
-              />
-              {errors.totalHours && <span className="error">{errors.totalHours}</span>}
-            </div>
+          <div className="form-group">
+            <label>Horario *</label>
+            <select
+              name="scheduleId"
+              value={formData.scheduleId}
+              onChange={handleChange}
+              required
+              disabled={!selectedProgramId}
+            >
+              <option value="">Seleccione un horario</option>
+              {availableSchedules.map(schedule => (
+                <option key={schedule.id} value={schedule.id}>
+                  {schedule.days}: {schedule.startTime} - {schedule.endTime}
+                </option>
+              ))}
+            </select>
+            {errors.scheduleId && <span className="error">{errors.scheduleId}</span>}
+          </div>
+
+          <div className="form-group">
+            <label>Horas Totales Requeridas *</label>
+            <input
+              type="number"
+              name="totalHours"
+              value={formData.totalHours}
+              onChange={handleChange}
+              min="1"
+              required
+            />
+            {errors.totalHours && <span className="error">{errors.totalHours}</span>}
           </div>
 
           <div className="form-actions">
@@ -207,4 +230,3 @@ const SocialServerForm = ({ socialServer, parks, onSubmit, onCancel }) => {
 };
 
 export default SocialServerForm;
-

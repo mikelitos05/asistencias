@@ -18,7 +18,9 @@ public class SocialServerResponse {
     private Long parkId;
     private String parkName;
     private String school;
+    private Long programId;
     private String program;
+    private Long scheduleId;
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer totalHoursRequired;

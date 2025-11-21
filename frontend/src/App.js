@@ -8,6 +8,7 @@ import AttendanceForm from './pages/AttendanceForm';
 import ParksPage from './pages/admin/ParksPage';
 import SocialServersPage from './pages/admin/SocialServersPage';
 import AttendancesPage from './pages/admin/AttendancesPage';
+import ProgramsPage from './pages/admin/ProgramsPage';
 import UsersPage from './pages/admin/UsersPage';
 import { ROLES } from './utils/constants';
 import './App.css';
@@ -19,13 +20,13 @@ function App() {
         <Routes>
           {/* Rutas públicas */}
           <Route path="/login" element={<Login />} />
-          <Route 
-            path="/asistencias" 
+          <Route
+            path="/asistencias"
             element={
               <Layout>
                 <AttendanceForm />
               </Layout>
-            } 
+            }
           />
 
           {/* Rutas protegidas para ADMIN y SUPER_ADMIN */}
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
                 <AttendancesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/programas"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+                <ProgramsPage />
               </ProtectedRoute>
             }
           />

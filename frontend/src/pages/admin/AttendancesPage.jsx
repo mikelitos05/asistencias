@@ -4,9 +4,14 @@ import Layout from '../../components/Layout';
 import AttendanceList from '../../components/admin/AttendanceList';
 import { attendanceService } from '../../services/attendanceService';
 import { socialServerService } from '../../services/socialServerService';
+import PhotoSizeConfigModal from '../../components/admin/PhotoSizeConfigModal';
+import { useAuth } from '../../context/AuthContext';
+import { ROLES } from '../../utils/constants';
 import './AttendancesPage.css';
 
 const AttendancesPage = () => {
+  const { user } = useAuth();
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [allAttendances, setAllAttendances] = useState([]);
   const [filteredAttendances, setFilteredAttendances] = useState([]);
@@ -74,7 +79,7 @@ const AttendancesPage = () => {
       // Intentar obtener el ID del servidor social por email
       const socialServers = await socialServerService.getAll();
       const socialServer = socialServers.find((s) => s.email === email);
-      
+
       if (socialServer && socialServer.id) {
         // Usar el endpoint específico con el ID
         setSelectedUser({ email, name: userName, id: socialServer.id });
@@ -117,7 +122,17 @@ const AttendancesPage = () => {
     <Layout>
       <div className="attendances-page">
         <div className="page-header">
-          <h1>Asistencias</h1>
+          <div className="header-title-actions">
+            <h1>Asistencias</h1>
+            {user?.role === ROLES.SUPER_ADMIN && (
+              <button
+                className="btn-config"
+                onClick={() => setIsConfigModalOpen(true)}
+              >
+                Configurar Tamaño
+              </button>
+            )}
+          </div>
           {viewMode === 'user' && selectedUser && (
             <button onClick={handleBackToAll} className="btn-back">
               ← Volver a todas las asistencias
@@ -138,6 +153,11 @@ const AttendancesPage = () => {
           attendances={filteredAttendances}
           onUserClick={viewMode === 'all' ? handleUserClick : null}
           showUserColumn={viewMode === 'all'}
+        />
+
+        <PhotoSizeConfigModal
+          isOpen={isConfigModalOpen}
+          onClose={() => setIsConfigModalOpen(false)}
         />
       </div>
     </Layout>

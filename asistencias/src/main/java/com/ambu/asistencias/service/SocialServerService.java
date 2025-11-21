@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,8 @@ public class SocialServerService {
 
     private final SocialServerRepository socialServerRepository;
     private final ParkRepository parkRepository;
+    private final com.ambu.asistencias.repository.ScheduleRepository scheduleRepository;
+    private final com.ambu.asistencias.repository.ProgramRepository programRepository;
 
     public List<SocialServerResponse> getAllSocialServers() {
         List<SocialServer> socialServers = socialServerRepository.findAll();
@@ -53,12 +56,22 @@ public class SocialServerService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un parque con el ID: " + request.getParkId()));
 
-        // Validar que startTime sea anterior a endTime
-        if (request.getStartTime().isAfter(request.getEndTime()) || 
-            request.getStartTime().equals(request.getEndTime())) {
-            throw new IllegalArgumentException(
-                    "La hora de inicio debe ser anterior a la hora de fin");
+        // Buscar el Schedule por ID
+        com.ambu.asistencias.model.Schedule schedule = scheduleRepository.findById(request.getScheduleId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró un horario con el ID: " + request.getScheduleId()));
+
+        // Obtener el programa del horario
+        com.ambu.asistencias.model.Program program = schedule.getProgram();
+
+        // Validar capacidad
+        if (program.getCurrentCapacity() <= 0) {
+            throw new IllegalStateException("El programa " + program.getName() + " no tiene capacidad disponible.");
         }
+
+        // Decrementar capacidad
+        program.setCurrentCapacity(program.getCurrentCapacity() - 1);
+        programRepository.save(program);
 
         // Crear el SocialServer
         SocialServer socialServer = SocialServer.builder()
@@ -66,9 +79,7 @@ public class SocialServerService {
                 .name(request.getName())
                 .park(park)
                 .school(request.getSchool())
-                .program(request.getProgram())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .schedule(schedule)
                 .totalHoursRequired(request.getTotalHours())
                 .build();
 
@@ -99,11 +110,32 @@ public class SocialServerService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un parque con el ID: " + request.getParkId()));
 
-        // Validar que startTime sea anterior a endTime
-        if (request.getStartTime().isAfter(request.getEndTime()) || 
-            request.getStartTime().equals(request.getEndTime())) {
-            throw new IllegalArgumentException(
-                    "La hora de inicio debe ser anterior a la hora de fin");
+        // Buscar el Schedule por ID
+        com.ambu.asistencias.model.Schedule schedule = scheduleRepository.findById(request.getScheduleId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró un horario con el ID: " + request.getScheduleId()));
+
+        // Nota: Si se cambia de programa, se debería ajustar la capacidad de ambos
+        // programas (viejo y nuevo).
+        // Por simplicidad en esta iteración, asumiremos que solo se actualiza la info
+        // del servidor,
+        // pero si cambia el schedule, deberíamos manejar la capacidad.
+        // Implementación básica:
+        if (!socialServer.getSchedule().getId().equals(schedule.getId())) {
+            // Lógica de cambio de capacidad si cambia el programa
+            com.ambu.asistencias.model.Program oldProgram = socialServer.getSchedule().getProgram();
+            com.ambu.asistencias.model.Program newProgram = schedule.getProgram();
+
+            if (!oldProgram.getId().equals(newProgram.getId())) {
+                oldProgram.setCurrentCapacity(oldProgram.getCurrentCapacity() + 1);
+                programRepository.save(oldProgram);
+
+                if (newProgram.getCurrentCapacity() <= 0) {
+                    throw new IllegalStateException("El nuevo programa no tiene capacidad.");
+                }
+                newProgram.setCurrentCapacity(newProgram.getCurrentCapacity() - 1);
+                programRepository.save(newProgram);
+            }
         }
 
         // Actualizar el servidor social
@@ -111,9 +143,7 @@ public class SocialServerService {
         socialServer.setName(request.getName());
         socialServer.setPark(park);
         socialServer.setSchool(request.getSchool());
-        socialServer.setProgram(request.getProgram());
-        socialServer.setStartTime(request.getStartTime());
-        socialServer.setEndTime(request.getEndTime());
+        socialServer.setSchedule(schedule);
         socialServer.setTotalHoursRequired(request.getTotalHours());
 
         SocialServer updatedSocialServer = socialServerRepository.save(socialServer);
@@ -138,6 +168,24 @@ public class SocialServerService {
     }
 
     private SocialServerResponse mapToResponse(SocialServer socialServer, String message) {
+        // Handle null schedule for legacy social servers
+        Long programId = null;
+        String programName = null;
+        Long scheduleId = null;
+        LocalTime startTime = null;
+        LocalTime endTime = null;
+
+        if (socialServer.getSchedule() != null) {
+            scheduleId = socialServer.getSchedule().getId();
+            startTime = socialServer.getSchedule().getStartTime();
+            endTime = socialServer.getSchedule().getEndTime();
+
+            if (socialServer.getSchedule().getProgram() != null) {
+                programId = socialServer.getSchedule().getProgram().getId();
+                programName = socialServer.getSchedule().getProgram().getName();
+            }
+        }
+
         return SocialServerResponse.builder()
                 .id(socialServer.getId())
                 .email(socialServer.getEmail())
@@ -145,12 +193,13 @@ public class SocialServerService {
                 .parkId(socialServer.getPark().getId())
                 .parkName(socialServer.getPark().getParkName())
                 .school(socialServer.getSchool())
-                .program(socialServer.getProgram())
-                .startTime(socialServer.getStartTime())
-                .endTime(socialServer.getEndTime())
+                .programId(programId)
+                .program(programName)
+                .scheduleId(scheduleId)
+                .startTime(startTime)
+                .endTime(endTime)
                 .totalHoursRequired(socialServer.getTotalHoursRequired())
                 .message(message)
                 .build();
     }
 }
-

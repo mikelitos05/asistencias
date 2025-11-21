@@ -48,28 +48,30 @@ public class SecurityConfig {
                         .requestMatchers("POST", apiPrefix + "/asistencias").permitAll()
                         .requestMatchers("GET", apiPrefix + "/parques").permitAll()
                         .requestMatchers("GET", apiPrefix + "/parques/{id}").permitAll()
-                        
-                        // Endpoints de parques - ADMIN y SUPER_ADMIN pueden crear, actualizar y eliminar
+
+                        // Endpoints de parques - ADMIN y SUPER_ADMIN pueden crear, actualizar y
+                        // eliminar
                         .requestMatchers("POST", apiPrefix + "/parques").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("PUT", apiPrefix + "/parques/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("DELETE", apiPrefix + "/parques/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        
+
+                        // Endpoints de programas - solo ADMIN y SUPER_ADMIN
+                        .requestMatchers(apiPrefix + "/programs/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+
                         // Endpoints de servidores sociales - solo ADMIN y SUPER_ADMIN
                         .requestMatchers(apiPrefix + "/servidores-sociales/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        
+
                         // Endpoints de asistencias - GET solo para ADMIN y SUPER_ADMIN, POST público
                         .requestMatchers("GET", apiPrefix + "/asistencias").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("GET", apiPrefix + "/asistencias/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        
+
                         // Endpoints de administración - solo ADMIN y SUPER_ADMIN
                         .requestMatchers(apiPrefix + "/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        
+
                         // Todas las demás solicitudes requieren autenticación
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -79,7 +81,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -108,4 +110,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

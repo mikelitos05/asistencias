@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import net.coobird.thumbnailator.Thumbnails;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final SocialServerRepository socialServerRepository;
     private final ParkRepository parkRepository;
+    private final AppConfigService appConfigService;
 
     @Value("${app.upload.dir:uploads/photos}")
     private String uploadDir;
@@ -63,11 +66,11 @@ public class AttendanceService {
 
     public List<AttendanceResponse> getAttendancesBySocialServerId(Long socialServerId) {
         log.info("Obteniendo asistencias para servidor social con ID: {}", socialServerId);
-        
+
         SocialServer socialServer = socialServerRepository.findById(socialServerId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un servidor social con el ID: " + socialServerId));
-        
+
         List<Attendance> attendances = attendanceRepository.findBySocialServerOrderByTimestampDesc(socialServer);
         return attendances.stream()
                 .map(this::mapToResponse)
@@ -94,31 +97,39 @@ public class AttendanceService {
         String photoPath = "uploads/photos/default-photo.png";
         if (photo == null || photo.isEmpty()) {
             throw new ResourceNotFoundException(
-                        "La foto de asistencia es obligatoria.");
+                    "La foto de asistencia es obligatoria.");
         }
-            try {
-                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-                Files.createDirectories(uploadPath);
+        try {
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
 
-                String originalFilename = StringUtils.cleanPath(photo.getOriginalFilename());
-                String extension = "";
-                int idx = originalFilename.lastIndexOf('.');
-                if (idx > 0) {
-                    extension = originalFilename.substring(idx);
-                }
-                String filename = "attendance-" + UUID.randomUUID() + extension;
-                
-                Path target = uploadPath.resolve(filename);
-
-                Files.copy(photo.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-
-                // Save relative path
-                photoPath = uploadDir + "/" + filename;
-            } catch (IOException e) {
-                log.error("Error guardando la foto de asistencia", e);
-                throw new RuntimeException("No se pudo guardar la foto de asistencia", e);
+            String originalFilename = StringUtils.cleanPath(photo.getOriginalFilename());
+            String extension = "";
+            int idx = originalFilename.lastIndexOf('.');
+            if (idx > 0) {
+                extension = originalFilename.substring(idx);
             }
-        
+            String filename = "attendance-" + UUID.randomUUID() + extension;
+
+            Path target = uploadPath.resolve(filename);
+
+            long maxSizeBytes = appConfigService.getMaxPhotoSizeMB() * 1024L * 1024L;
+            if (photo.getSize() > maxSizeBytes) {
+                log.info("La foto excede el límite de {}MB. Redimensionando...", appConfigService.getMaxPhotoSizeMB());
+                Thumbnails.of(photo.getInputStream())
+                        .size(2048, 2048)
+                        .outputQuality(0.8)
+                        .toFile(target.toFile());
+            } else {
+                Files.copy(photo.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Save relative path
+            photoPath = uploadDir + "/" + filename;
+        } catch (IOException e) {
+            log.error("Error guardando la foto de asistencia", e);
+            throw new RuntimeException("No se pudo guardar la foto de asistencia", e);
+        }
 
         // Crear y guardar la asistencia
         Attendance attendance = Attendance.builder()
@@ -136,8 +147,8 @@ public class AttendanceService {
     }
 
     private AttendanceResponse mapToResponse(Attendance attendance) {
-        String message = attendance.getType() == AttendanceType.CHECK_IN 
-                ? "Entrada registrada exitosamente" 
+        String message = attendance.getType() == AttendanceType.CHECK_IN
+                ? "Entrada registrada exitosamente"
                 : "Salida registrada exitosamente";
 
         return AttendanceResponse.builder()
@@ -160,9 +171,8 @@ public class AttendanceService {
             return AttendanceType.CHECK_OUT;
         } else {
             throw new ResourceNotFoundException(
-                        "Ponga un tipo de entrada valido: " + type);
+                    "Ponga un tipo de entrada valido: " + type);
         }
     }
 
 }
-

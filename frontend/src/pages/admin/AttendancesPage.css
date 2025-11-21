@@ -4,14 +4,36 @@
 
 .page-header {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.header-title-actions {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  width: 100%;
 }
 
 .page-header h1 {
   color: #333;
   margin: 0;
+}
+
+.btn-config {
+  padding: 0.5rem 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-config:hover {
+  background-color: #218838;
 }
 
 .btn-back {
@@ -23,6 +45,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  align-self: flex-start;
 }
 
 .btn-back:hover {
@@ -62,14 +85,17 @@
 }
 
 @media (max-width: 768px) {
-  .page-header {
+  .header-title-actions {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .btn-config {
+    width: 100%;
   }
 
   .btn-back {
     width: 100%;
   }
 }
-

@@ -27,23 +27,25 @@ const Navbar = () => {
           <img src="/ambu_logo.png" alt="AMBU Logo" className="logo-img" />
           <span>Sistema de Asistencias</span>
         </Link>
-        
+
         <div className="navbar-menu">
           {isAdmin && (
             <>
               <Link to="/admin/parques" className="navbar-link">
                 Parques
               </Link>
-              <Link to="/admin/servidores-sociales" className="navbar-link">
-                Servidores Sociales
-              </Link>
-              <Link to="/admin/asistencias" className="navbar-link">
-                Asistencias
+              <Link to="/admin/programas" className="navbar-link">
+                Programas
               </Link>
               {isSuperAdmin && (
-                <Link to="/admin/usuarios" className="navbar-link">
-                  Usuarios
-                </Link>
+                <>
+                  <Link to="/admin/servidores-sociales" className="navbar-link">
+                    Servidores Sociales
+                  </Link>
+                  <Link to="/admin/usuarios" className="navbar-link">
+                    Usuarios
+                  </Link>
+                </>
               )}
             </>
           )}
