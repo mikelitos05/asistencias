@@ -75,10 +75,10 @@ const Login = () => {
               placeholder="••••••••"
             />
           </div>
-          {error && <div className="error-message">{error}</div>}
           <button type="submit" className="login-button" disabled={loading}>
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
+          {error && <div className="error-message">{error}</div>}
         </form>
       </div>
     </div>

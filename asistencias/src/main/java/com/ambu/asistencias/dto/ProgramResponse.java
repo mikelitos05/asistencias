@@ -39,5 +39,7 @@ public class ProgramResponse {
         private String days;
         private LocalTime startTime;
         private LocalTime endTime;
+        private Integer capacity;
+        private Integer currentCapacity;
     }
 }

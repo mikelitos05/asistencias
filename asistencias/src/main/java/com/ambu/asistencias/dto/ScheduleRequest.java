@@ -23,4 +23,7 @@ public class ScheduleRequest {
 
     @NotNull(message = "La hora de fin es obligatoria")
     private LocalTime endTime;
+
+    @NotNull(message = "La capacidad es obligatoria")
+    private Integer capacity;
 }

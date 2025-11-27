@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import AttendanceList from '../../components/admin/AttendanceList';
 import { attendanceService } from '../../services/attendanceService';
@@ -11,6 +11,7 @@ import './AttendancesPage.css';
 
 const AttendancesPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [allAttendances, setAllAttendances] = useState([]);
@@ -133,7 +134,11 @@ const AttendancesPage = () => {
               </button>
             )}
           </div>
-          {viewMode === 'user' && selectedUser && (
+          {servidorId ? (
+            <button onClick={() => navigate('/admin/servidores-sociales')} className="btn-back">
+              ← Volver a Servidores Sociales
+            </button>
+          ) : viewMode === 'user' && selectedUser && (
             <button onClick={handleBackToAll} className="btn-back">
               ← Volver a todas las asistencias
             </button>

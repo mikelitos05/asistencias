@@ -46,14 +46,14 @@ const UserList = ({ users, onEdit, onDelete }) => {
                     <div className="action-buttons">
                       <button
                         onClick={() => onEdit && onEdit(user)}
-                        className="btn-edit"
+                        className="btn-soft-yellow"
                         title="Editar"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => onDelete && onDelete(user.id)}
-                        className="btn-delete"
+                        className="btn-soft-red"
                         title="Eliminar"
                       >
                         Eliminar
@@ -71,4 +71,3 @@ const UserList = ({ users, onEdit, onDelete }) => {
 };
 
 export default UserList;
-

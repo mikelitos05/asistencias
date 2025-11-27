@@ -37,4 +37,10 @@ public class Schedule {
     @NotNull
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
+
+    @Column(name = "capacity")
+    private Integer capacity;
+
+    @Column(name = "current_capacity")
+    private Integer currentCapacity;
 }

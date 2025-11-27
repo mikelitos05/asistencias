@@ -1,5 +1,6 @@
-export const API_BASE_URL = 'http://localhost:8081/api';
-export const PHOTOS_BASE_URL = 'http://localhost:8081/api/admin/photos';
+const hostname = window.location.hostname;
+export const API_BASE_URL = `http://${hostname}:8081/api`;
+export const PHOTOS_BASE_URL = `http://${hostname}:8081/api/admin/photos`;
 
 export const ROLES = {
   ADMIN: 'ADMIN',

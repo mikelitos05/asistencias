@@ -17,6 +17,23 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ambu.asistencias.model.EmergencyContact;
+import com.ambu.asistencias.model.Period;
+
+import com.ambu.asistencias.repository.PeriodRepository;
+import net.coobird.thumbnailator.Thumbnails;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,6 +44,11 @@ public class SocialServerService {
     private final ParkRepository parkRepository;
     private final com.ambu.asistencias.repository.ScheduleRepository scheduleRepository;
     private final com.ambu.asistencias.repository.ProgramRepository programRepository;
+    private final PeriodRepository periodRepository;
+    private final AppConfigService appConfigService;
+
+    @Value("${app.upload.dir:uploads/photos}")
+    private String uploadDir;
 
     public List<SocialServerResponse> getAllSocialServers() {
         List<SocialServer> socialServers = socialServerRepository.findAll();
@@ -42,7 +64,7 @@ public class SocialServerService {
         return mapToResponse(socialServer);
     }
 
-    public SocialServerResponse createSocialServer(SocialServerRequest request) {
+    public SocialServerResponse createSocialServer(SocialServerRequest request, MultipartFile photo) {
         log.info("Creando nuevo servidor social con email: {}", request.getEmail());
 
         // Validar que el email no exista
@@ -64,14 +86,48 @@ public class SocialServerService {
         // Obtener el programa del horario
         com.ambu.asistencias.model.Program program = schedule.getProgram();
 
-        // Validar capacidad
-        if (program.getCurrentCapacity() <= 0) {
-            throw new IllegalStateException("El programa " + program.getName() + " no tiene capacidad disponible.");
+        // Determine status
+        SocialServer.Status status = SocialServer.Status
+                .valueOf(request.getStatus() != null ? request.getStatus() : "ACTIVO");
+
+        // Only consume capacity if status is ACTIVO
+        if (status == SocialServer.Status.ACTIVO) {
+            // Validar capacidad del horario
+            if (schedule.getCurrentCapacity() <= 0) {
+                throw new IllegalStateException("El horario seleccionado no tiene capacidad disponible.");
+            }
+
+            // Decrementar capacidad del horario
+            schedule.setCurrentCapacity(schedule.getCurrentCapacity() - 1);
+            scheduleRepository.save(schedule);
+
+            // Decrementar capacidad del programa
+            program.setCurrentCapacity(program.getCurrentCapacity() - 1);
+            programRepository.save(program);
         }
 
-        // Decrementar capacidad
-        program.setCurrentCapacity(program.getCurrentCapacity() - 1);
-        programRepository.save(program);
+        // Manejar foto
+        String photoPath = null;
+        if (photo != null && !photo.isEmpty()) {
+            photoPath = savePhoto(photo);
+        }
+
+        // Crear EmergencyContact
+        EmergencyContact emergencyContact = null;
+        if (request.getTutorName() != null && request.getTutorPhone() != null) {
+            emergencyContact = EmergencyContact.builder()
+                    .tutorName(request.getTutorName())
+                    .tutorPhone(request.getTutorPhone())
+                    .build();
+        }
+
+        // Buscar Period
+        Period period = null;
+        if (request.getPeriodId() != null) {
+            period = periodRepository.findById(request.getPeriodId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No se encontró periodo con ID: " + request.getPeriodId()));
+        }
 
         // Crear el SocialServer
         SocialServer socialServer = SocialServer.builder()
@@ -81,6 +137,25 @@ public class SocialServerService {
                 .school(request.getSchool())
                 .schedule(schedule)
                 .totalHoursRequired(request.getTotalHours())
+                .enrollmentDate(request.getEnrollmentDate() != null ? request.getEnrollmentDate() : LocalDate.now())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .status(status)
+                .photoPath(photoPath)
+                .badge(request.getBadge())
+                .vest(request.getVest())
+                .emergencyContact(emergencyContact)
+                .cellPhone(request.getCellPhone())
+                .bloodType(request.getBloodType() != null ? SocialServer.BloodType.valueOf(request.getBloodType())
+                        : SocialServer.BloodType.DESCONOCE)
+                .allergy(request.getAllergy())
+                .birthDate(request.getBirthDate())
+                .major(request.getMajor())
+                .period(period)
+                .socialServerType(SocialServer.SocialServerType.valueOf(request.getSocialServerType()))
+                .generalInductionDate(request.getGeneralInductionDate())
+                .acceptanceLetterId(request.getAcceptanceLetterId())
+                .completionLetterId(request.getCompletionLetterId())
                 .build();
 
         SocialServer savedSocialServer = socialServerRepository.save(socialServer);
@@ -89,7 +164,40 @@ public class SocialServerService {
         return mapToResponse(savedSocialServer, "Servidor social creado exitosamente");
     }
 
-    public SocialServerResponse updateSocialServer(Long id, SocialServerRequest request) {
+    private String savePhoto(MultipartFile photo) {
+        try {
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(uploadPath);
+
+            String originalFilename = StringUtils.cleanPath(photo.getOriginalFilename());
+            String extension = "";
+            int idx = originalFilename.lastIndexOf('.');
+            if (idx > 0) {
+                extension = originalFilename.substring(idx);
+            }
+            String filename = "social-server-" + UUID.randomUUID() + extension;
+
+            Path target = uploadPath.resolve(filename);
+
+            long maxSizeBytes = appConfigService.getMaxPhotoSizeMB() * 1024L * 1024L;
+            if (photo.getSize() > maxSizeBytes) {
+                log.info("La foto excede el límite de {}MB. Redimensionando...", appConfigService.getMaxPhotoSizeMB());
+                Thumbnails.of(photo.getInputStream())
+                        .size(2048, 2048)
+                        .outputQuality(0.8)
+                        .toFile(target.toFile());
+            } else {
+                Files.copy(photo.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            return uploadDir + "/" + filename;
+        } catch (IOException e) {
+            log.error("Error guardando la foto", e);
+            throw new RuntimeException("No se pudo guardar la foto", e);
+        }
+    }
+
+    public SocialServerResponse updateSocialServer(Long id, SocialServerRequest request, MultipartFile photo) {
         log.info("Actualizando servidor social con ID: {}", id);
 
         SocialServer socialServer = socialServerRepository.findById(id)
@@ -111,31 +219,118 @@ public class SocialServerService {
                         "No se encontró un parque con el ID: " + request.getParkId()));
 
         // Buscar el Schedule por ID
-        com.ambu.asistencias.model.Schedule schedule = scheduleRepository.findById(request.getScheduleId())
+        com.ambu.asistencias.model.Schedule newSchedule = scheduleRepository.findById(request.getScheduleId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un horario con el ID: " + request.getScheduleId()));
 
-        // Nota: Si se cambia de programa, se debería ajustar la capacidad de ambos
-        // programas (viejo y nuevo).
-        // Por simplicidad en esta iteración, asumiremos que solo se actualiza la info
-        // del servidor,
-        // pero si cambia el schedule, deberíamos manejar la capacidad.
-        // Implementación básica:
-        if (!socialServer.getSchedule().getId().equals(schedule.getId())) {
-            // Lógica de cambio de capacidad si cambia el programa
-            com.ambu.asistencias.model.Program oldProgram = socialServer.getSchedule().getProgram();
-            com.ambu.asistencias.model.Program newProgram = schedule.getProgram();
+        SocialServer.Status oldStatus = socialServer.getStatus();
+        SocialServer.Status newStatus = request.getStatus() != null ? SocialServer.Status.valueOf(request.getStatus())
+                : oldStatus;
 
-            if (!oldProgram.getId().equals(newProgram.getId())) {
+        com.ambu.asistencias.model.Schedule oldSchedule = socialServer.getSchedule();
+        boolean scheduleChanged = !oldSchedule.getId().equals(newSchedule.getId());
+
+        // Logic for capacity management considering status and schedule changes
+
+        // Case 1: Schedule Changed
+        if (scheduleChanged) {
+            // If user was ACTIVO in old schedule, release capacity there
+            if (oldStatus == SocialServer.Status.ACTIVO) {
+                oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() + 1);
+                scheduleRepository.save(oldSchedule);
+
+                com.ambu.asistencias.model.Program oldProgram = oldSchedule.getProgram();
                 oldProgram.setCurrentCapacity(oldProgram.getCurrentCapacity() + 1);
                 programRepository.save(oldProgram);
+            }
 
+            // If user is becoming/staying ACTIVO in new schedule, consume capacity there
+            if (newStatus == SocialServer.Status.ACTIVO) {
+                if (newSchedule.getCurrentCapacity() <= 0) {
+                    throw new IllegalStateException("El nuevo horario no tiene capacidad disponible.");
+                }
+                newSchedule.setCurrentCapacity(newSchedule.getCurrentCapacity() - 1);
+                scheduleRepository.save(newSchedule);
+
+                com.ambu.asistencias.model.Program newProgram = newSchedule.getProgram();
+                // Note: If programs are different, we need to check capacity of new program
+                // too.
+                // If same program, we just released one spot (above) so it should be fine,
+                // unless it was full and we are taking the last spot?
+                // Actually, if we released one, we have at least 1 spot.
+                // But let's be safe and check program capacity if it's a different program or
+                // generally.
+
+                // If we released from oldProgram, and newProgram is same, capacity is +1.
+                // So checking <= 0 is correct.
+
+                // However, if we didn't release (because oldStatus was INACTIVO), we must
+                // check.
                 if (newProgram.getCurrentCapacity() <= 0) {
+                    // If we just incremented it (same program), it would be > 0.
+                    // If we didn't increment it (different program or oldStatus INACTIVO), it might
+                    // be 0.
                     throw new IllegalStateException("El nuevo programa no tiene capacidad.");
                 }
                 newProgram.setCurrentCapacity(newProgram.getCurrentCapacity() - 1);
                 programRepository.save(newProgram);
             }
+        }
+        // Case 2: Schedule NOT Changed, but Status Changed
+        else {
+            if (oldStatus == SocialServer.Status.ACTIVO && newStatus == SocialServer.Status.INACTIVO) {
+                // Release capacity
+                oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() + 1);
+                scheduleRepository.save(oldSchedule);
+
+                com.ambu.asistencias.model.Program program = oldSchedule.getProgram();
+                program.setCurrentCapacity(program.getCurrentCapacity() + 1);
+                programRepository.save(program);
+            } else if (oldStatus == SocialServer.Status.INACTIVO && newStatus == SocialServer.Status.ACTIVO) {
+                // Consume capacity
+                if (oldSchedule.getCurrentCapacity() <= 0) {
+                    throw new IllegalStateException(
+                            "El horario no tiene capacidad disponible para reactivar al usuario.");
+                }
+                oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() - 1);
+                scheduleRepository.save(oldSchedule);
+
+                com.ambu.asistencias.model.Program program = oldSchedule.getProgram();
+                if (program.getCurrentCapacity() <= 0) {
+                    throw new IllegalStateException(
+                            "El programa no tiene capacidad disponible para reactivar al usuario.");
+                }
+                program.setCurrentCapacity(program.getCurrentCapacity() - 1);
+                programRepository.save(program);
+            }
+        }
+
+        // Manejar foto
+        if (photo != null && !photo.isEmpty()) {
+            String photoPath = savePhoto(photo);
+            socialServer.setPhotoPath(photoPath);
+        }
+
+        // Actualizar EmergencyContact
+        if (request.getTutorName() != null && request.getTutorPhone() != null) {
+            if (socialServer.getEmergencyContact() != null) {
+                socialServer.getEmergencyContact().setTutorName(request.getTutorName());
+                socialServer.getEmergencyContact().setTutorPhone(request.getTutorPhone());
+            } else {
+                EmergencyContact emergencyContact = EmergencyContact.builder()
+                        .tutorName(request.getTutorName())
+                        .tutorPhone(request.getTutorPhone())
+                        .build();
+                socialServer.setEmergencyContact(emergencyContact);
+            }
+        }
+
+        // Actualizar Period
+        if (request.getPeriodId() != null) {
+            Period period = periodRepository.findById(request.getPeriodId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No se encontró periodo con ID: " + request.getPeriodId()));
+            socialServer.setPeriod(period);
         }
 
         // Actualizar el servidor social
@@ -143,8 +338,40 @@ public class SocialServerService {
         socialServer.setName(request.getName());
         socialServer.setPark(park);
         socialServer.setSchool(request.getSchool());
-        socialServer.setSchedule(schedule);
+        socialServer.setSchedule(newSchedule);
         socialServer.setTotalHoursRequired(request.getTotalHours());
+
+        if (request.getEnrollmentDate() != null)
+            socialServer.setEnrollmentDate(request.getEnrollmentDate());
+        if (request.getStartDate() != null)
+            socialServer.setStartDate(request.getStartDate());
+        if (request.getEndDate() != null)
+            socialServer.setEndDate(request.getEndDate());
+
+        socialServer.setStatus(newStatus);
+
+        if (request.getBadge() != null)
+            socialServer.setBadge(request.getBadge());
+        if (request.getVest() != null)
+            socialServer.setVest(request.getVest());
+        if (request.getCellPhone() != null)
+            socialServer.setCellPhone(request.getCellPhone());
+        if (request.getBloodType() != null)
+            socialServer.setBloodType(SocialServer.BloodType.valueOf(request.getBloodType()));
+        if (request.getAllergy() != null)
+            socialServer.setAllergy(request.getAllergy());
+        if (request.getBirthDate() != null)
+            socialServer.setBirthDate(request.getBirthDate());
+        if (request.getMajor() != null)
+            socialServer.setMajor(request.getMajor());
+        if (request.getSocialServerType() != null)
+            socialServer.setSocialServerType(SocialServer.SocialServerType.valueOf(request.getSocialServerType()));
+        if (request.getGeneralInductionDate() != null)
+            socialServer.setGeneralInductionDate(request.getGeneralInductionDate());
+        if (request.getAcceptanceLetterId() != null)
+            socialServer.setAcceptanceLetterId(request.getAcceptanceLetterId());
+        if (request.getCompletionLetterId() != null)
+            socialServer.setCompletionLetterId(request.getCompletionLetterId());
 
         SocialServer updatedSocialServer = socialServerRepository.save(socialServer);
         log.info("Servidor social actualizado exitosamente con ID: {}", updatedSocialServer.getId());
@@ -158,6 +385,19 @@ public class SocialServerService {
         SocialServer socialServer = socialServerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un servidor social con el ID: " + id));
+
+        // Only release capacity if user was ACTIVO
+        if (socialServer.getStatus() == SocialServer.Status.ACTIVO) {
+            // Incrementar capacidad del horario
+            com.ambu.asistencias.model.Schedule schedule = socialServer.getSchedule();
+            schedule.setCurrentCapacity(schedule.getCurrentCapacity() + 1);
+            scheduleRepository.save(schedule);
+
+            // Incrementar capacidad del programa
+            com.ambu.asistencias.model.Program program = schedule.getProgram();
+            program.setCurrentCapacity(program.getCurrentCapacity() + 1);
+            programRepository.save(program);
+        }
 
         socialServerRepository.delete(socialServer);
         log.info("Servidor social eliminado exitosamente con ID: {}", id);
@@ -200,6 +440,32 @@ public class SocialServerService {
                 .endTime(endTime)
                 .totalHoursRequired(socialServer.getTotalHoursRequired())
                 .message(message)
+                .enrollmentDate(socialServer.getEnrollmentDate())
+                .startDate(socialServer.getStartDate())
+                .endDate(socialServer.getEndDate())
+                .status(socialServer.getStatus() != null ? socialServer.getStatus().name() : null)
+                .photoPath(socialServer.getPhotoPath())
+                .badge(socialServer.getBadge())
+                .vest(socialServer.getVest())
+                .tutorName(
+                        socialServer.getEmergencyContact() != null ? socialServer.getEmergencyContact().getTutorName()
+                                : null)
+                .tutorPhone(
+                        socialServer.getEmergencyContact() != null ? socialServer.getEmergencyContact().getTutorPhone()
+                                : null)
+                .cellPhone(socialServer.getCellPhone())
+                .bloodType(socialServer.getBloodType() != null ? socialServer.getBloodType().name() : null)
+                .allergy(socialServer.getAllergy())
+                .birthDate(socialServer.getBirthDate())
+                .major(socialServer.getMajor())
+                .periodId(socialServer.getPeriod() != null ? socialServer.getPeriod().getId() : null)
+                .periodStartDate(socialServer.getPeriod() != null ? socialServer.getPeriod().getStartDate() : null)
+                .periodEndDate(socialServer.getPeriod() != null ? socialServer.getPeriod().getEndDate() : null)
+                .socialServerType(
+                        socialServer.getSocialServerType() != null ? socialServer.getSocialServerType().name() : null)
+                .generalInductionDate(socialServer.getGeneralInductionDate())
+                .acceptanceLetterId(socialServer.getAcceptanceLetterId())
+                .completionLetterId(socialServer.getCompletionLetterId())
                 .build();
     }
 }

@@ -70,6 +70,40 @@ const SocialServersPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const blob = await socialServerService.export();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'servidores_sociales.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Error exporting:', err);
+      alert('Error al exportar el archivo');
+    }
+  };
+
+  const handleImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      await socialServerService.import(file);
+      alert('Importación exitosa');
+      loadData(); // Reload data
+    } catch (err) {
+      console.error('Error importing:', err);
+      alert('Error al importar el archivo');
+    } finally {
+      setLoading(false);
+      event.target.value = ''; // Reset input
+    }
+  };
+
   const handleViewAttendances = (id) => {
     window.location.href = `/admin/asistencias?servidor=${id}`;
   };
@@ -105,6 +139,19 @@ const SocialServersPage = () => {
         <div className="page-header">
           <h1>Servidores Sociales</h1>
           <div className="header-buttons">
+            <input
+              type="file"
+              id="import-excel"
+              style={{ display: 'none' }}
+              accept=".xlsx, .xls"
+              onChange={handleImport}
+            />
+            <button onClick={() => document.getElementById('import-excel').click()} className="btn-secondary">
+              Importar Excel
+            </button>
+            <button onClick={handleExport} className="btn-secondary">
+              Exportar Excel
+            </button>
             <button onClick={handleCreate} className="btn-create">
               + Nuevo Servidor Social
             </button>

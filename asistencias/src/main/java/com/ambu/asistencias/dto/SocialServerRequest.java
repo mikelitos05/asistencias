@@ -36,4 +36,35 @@ public class SocialServerRequest {
     @Min(value = 1, message = "Las horas totales deben ser al menos 1")
     @Max(value = 10000, message = "Las horas totales no pueden exceder 10000")
     private Integer totalHours;
+
+    private java.time.LocalDate startDate;
+    private java.time.LocalDate endDate;
+    private String status;
+
+    @NotNull(message = "El gafete es obligatorio")
+    private Boolean badge;
+
+    @NotNull(message = "El chaleco es obligatorio")
+    private Integer vest;
+
+    private String tutorName;
+    private String tutorPhone;
+    private String cellPhone;
+    private String bloodType;
+    private String allergy;
+
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
+    private java.time.LocalDate birthDate;
+
+    private String major;
+    private Long periodId;
+
+    @NotNull(message = "El tipo de servidor social es obligatorio")
+    private String socialServerType;
+
+    private java.time.LocalDate generalInductionDate;
+    private String acceptanceLetterId;
+    private String completionLetterId;
+
+    private java.time.LocalDate enrollmentDate;
 }

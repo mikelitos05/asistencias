@@ -33,14 +33,14 @@ const ParkList = ({ parks, onEdit, onDelete }) => {
                     <div className="action-buttons">
                       <button
                         onClick={() => onEdit(park)}
-                        className="btn-edit"
+                        className="btn-soft-yellow"
                         title="Editar"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => onDelete(park.id)}
-                        className="btn-delete"
+                        className="btn-soft-red"
                         title="Eliminar"
                       >
                         Eliminar
@@ -58,4 +58,3 @@ const ParkList = ({ parks, onEdit, onDelete }) => {
 };
 
 export default ParkList;
-

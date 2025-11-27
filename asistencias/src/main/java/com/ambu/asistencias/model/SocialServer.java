@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -53,4 +54,75 @@ public class SocialServer {
 
     @OneToMany(mappedBy = "socialServer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendances;
+
+    @Column(name = "enrollment_date", nullable = false)
+    private java.time.LocalDate enrollmentDate;
+
+    @Column(name = "start_date")
+    private java.time.LocalDate startDate;
+
+    @Column(name = "end_date")
+    private java.time.LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
+    @Column(name = "photo_path")
+    private String photoPath;
+
+    @Column(nullable = false)
+    private Boolean badge;
+
+    @Column(nullable = false)
+    private Integer vest;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "emergency_contact_id", referencedColumnName = "id")
+    private EmergencyContact emergencyContact;
+
+    @Column(name = "cell_phone")
+    private String cellPhone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "blood_type")
+    private BloodType bloodType;
+
+    @Column(name = "allergy")
+    private String allergy;
+
+    @Column(name = "birth_date", nullable = false)
+    private java.time.LocalDate birthDate;
+
+    @Column(name = "major")
+    private String major;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "period_id")
+    private Period period;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "social_server_type", nullable = false)
+    private SocialServerType socialServerType;
+
+    @Column(name = "general_induction_date")
+    private java.time.LocalDate generalInductionDate;
+
+    @Column(name = "acceptance_letter_id")
+    private String acceptanceLetterId;
+
+    @Column(name = "completion_letter_id")
+    private String completionLetterId;
+
+    public enum Status {
+        ACTIVO, INACTIVO
+    }
+
+    public enum BloodType {
+        A_POSITIVE, A_NEGATIVE, B_POSITIVE, B_NEGATIVE, AB_POSITIVE, AB_NEGATIVE, O_POSITIVE, O_NEGATIVE, DESCONOCE
+    }
+
+    public enum SocialServerType {
+        PRACTICANTE_SOCIAL, SERVIDOR_SOCIAL
+    }
 }

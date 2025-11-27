@@ -132,11 +132,11 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={onCancel} className="btn-cancel">
+            <button type="button" onClick={onCancel} className="btn-secondary">
               Cancelar
             </button>
-            <button type="submit" className="btn-submit" disabled={loading}>
-              {loading ? 'Guardando...' : user ? 'Actualizar' : 'Crear'}
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Guardando...' : (user ? 'Actualizar' : 'Crear')}
             </button>
           </div>
         </form>

@@ -17,10 +17,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ambu.asistencias.dto.SocialServerRequest;
 import com.ambu.asistencias.dto.SocialServerResponse;
 import com.ambu.asistencias.service.SocialServerService;
+import com.ambu.asistencias.service.ExcelService;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("${api.prefix}/servidores-sociales")
@@ -29,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SocialServerController {
 
     private final SocialServerService socialServerService;
+    private final ExcelService excelService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
@@ -46,24 +56,26 @@ public class SocialServerController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<SocialServerResponse> createSocialServer(
-            @Valid @RequestBody SocialServerRequest request) {
-        
+            @Valid @RequestPart("data") SocialServerRequest request,
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
+
         log.info("Solicitud de creación de servidor social recibida");
-        SocialServerResponse response = socialServerService.createSocialServer(request);
+        SocialServerResponse response = socialServerService.createSocialServer(request, photo);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<SocialServerResponse> updateSocialServer(
             @PathVariable Long id,
-            @Valid @RequestBody SocialServerRequest request) {
-        
+            @Valid @RequestPart("data") SocialServerRequest request,
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
+
         log.info("Solicitud de actualización de servidor social con ID: {}", id);
-        SocialServerResponse response = socialServerService.updateSocialServer(id, request);
+        SocialServerResponse response = socialServerService.updateSocialServer(id, request, photo);
         return ResponseEntity.ok(response);
     }
 
@@ -74,5 +86,38 @@ public class SocialServerController {
         socialServerService.deleteSocialServer(id);
         return ResponseEntity.noContent().build();
     }
-}
 
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<String> importSocialServers(@RequestPart("file") MultipartFile file) {
+        log.info("Solicitud de importación de servidores sociales recibida");
+        try {
+            excelService.importSocialServers(file);
+            return ResponseEntity.ok("Importación exitosa");
+        } catch (IOException e) {
+            log.error("Error al importar archivo Excel", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar el archivo");
+        }
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<InputStreamResource> exportSocialServers() {
+        log.info("Solicitud de exportación de servidores sociales recibida");
+        try {
+            ByteArrayInputStream in = excelService.exportSocialServers();
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=servidores_sociales.xlsx");
+
+            return ResponseEntity
+                    .ok()
+                    .headers(headers)
+                    .contentType(MediaType
+                            .parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new InputStreamResource(in));
+        } catch (IOException e) {
+            log.error("Error al exportar archivo Excel", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+}

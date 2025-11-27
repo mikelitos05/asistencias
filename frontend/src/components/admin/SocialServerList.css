@@ -5,60 +5,139 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.search-container {
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .search-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: var(--surface-color);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+/* Column Selector Styles */
+.column-selector-container {
+  position: relative;
+}
+
+.btn-columns {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-columns:hover {
+  background-color: var(--background-color);
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+}
+
+.column-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem;
+  z-index: 100;
+  min-width: 250px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.column-option:hover {
+  color: var(--accent-color);
+}
+
+.column-option input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+/* Table Styles */
 .table-container {
   overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
-.servers-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.servers-table thead {
-  background-color: #f8f9fa;
+.data-table thead {
+  background-color: var(--background-color);
 }
 
-.servers-table th {
+.data-table th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #dee2e6;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.servers-table td {
+.data-table td {
   padding: 1rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.95rem;
 }
 
-.servers-table tbody tr:hover {
-  background-color: #f8f9fa;
+.data-table tbody tr:hover {
+  background-color: #f8fafc;
 }
 
-.no-data {
-  text-align: center;
-  color: #999;
-  padding: 2rem;
-}
-
+/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 0.5rem;
@@ -70,48 +149,57 @@
 .btn-delete {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-view {
-  background-color: #17a2b8;
-  color: white;
+  background-color: var(--info-bg);
+  color: var(--info-color);
 }
 
 .btn-view:hover {
-  background-color: #138496;
+  background-color: #bfdbfe;
+  transform: translateY(-1px);
 }
 
 .btn-edit {
-  background-color: #ffc107;
-  color: #333;
+  background-color: var(--warning-bg);
+  color: #b45309;
 }
 
 .btn-edit:hover {
-  background-color: #e0a800;
+  background-color: #fde68a;
+  transform: translateY(-1px);
 }
 
 .btn-delete {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--danger-bg);
+  color: var(--danger-color);
 }
 
 .btn-delete:hover {
-  background-color: #c82333;
+  background-color: #fecaca;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
-  .servers-table {
+  .list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .data-table {
     font-size: 0.9rem;
   }
 
-  .servers-table th,
-  .servers-table td {
-    padding: 0.5rem;
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 0.5rem;
   }
 
   .action-buttons {
@@ -123,5 +211,78 @@
   .btn-delete {
     width: 100%;
   }
+
+  .column-selector-dropdown {
+    width: 100%;
+    right: auto;
+    left: 0;
+  }
 }
 
+/* Photo Column Styles */
+.server-photo-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--border-color);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.server-photo-thumb:hover {
+  transform: scale(1.1);
+  border-color: var(--accent-color);
+}
+
+.no-photo {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Photo Modal */
+.photo-modal {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.full-size-photo {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  object-fit: contain;
+}
+
+.close-btn-photo {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  background: white;
+  border: none;
+  color: var(--text-primary);
+  font-size: 2rem;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s;
+}
+
+.close-btn-photo:hover {
+  background-color: var(--danger-color);
+  color: white;
+}
