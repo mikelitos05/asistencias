@@ -38,9 +38,8 @@ public class SocialServer {
     @JoinColumn(name = "park_id", nullable = false)
     private Park park;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false)
+    @JoinColumn(name = "schedule_id", nullable = true)
     private Schedule schedule;
 
     @NotBlank

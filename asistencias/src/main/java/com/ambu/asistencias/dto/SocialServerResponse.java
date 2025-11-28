@@ -21,6 +21,7 @@ public class SocialServerResponse {
     private Long programId;
     private String program;
     private Long scheduleId;
+    private String days;
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer totalHoursRequired;

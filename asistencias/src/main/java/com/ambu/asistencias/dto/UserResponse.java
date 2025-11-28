@@ -18,6 +18,4 @@ public class UserResponse {
     private String name;
     private User.Role role;
     private LocalDateTime registrationDate;
-    private Boolean active;
 }
-

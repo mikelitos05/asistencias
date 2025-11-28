@@ -33,7 +33,6 @@ public class UserService {
                 .name(request.getName())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
-                .active(true)
                 .registrationDate(java.time.LocalDateTime.now())
                 .build();
 
@@ -45,7 +44,6 @@ public class UserService {
                 .name(savedUser.getName())
                 .role(savedUser.getRole())
                 .registrationDate(savedUser.getRegistrationDate())
-                .active(savedUser.getActive())
                 .build();
     }
 
@@ -62,9 +60,7 @@ public class UserService {
                         .name(user.getName())
                         .role(user.getRole())
                         .registrationDate(user.getRegistrationDate())
-                        .active(user.getActive())
                         .build())
                 .collect(Collectors.toList());
     }
 }
-

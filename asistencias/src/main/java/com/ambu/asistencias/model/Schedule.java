@@ -22,9 +22,9 @@ public class Schedule {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_id", nullable = false)
+    @JoinColumn(name = "program_park_id", nullable = false)
     @JsonIgnore
-    private Program program;
+    private ProgramPark programPark;
 
     @NotBlank
     @Column(nullable = false)

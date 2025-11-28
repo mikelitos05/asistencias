@@ -48,11 +48,10 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getActive();
+        return true; // Users are always enabled now that active field is removed
     }
 
     public User getUser() {
         return user;
     }
 }
-

@@ -15,19 +15,19 @@ import java.util.List;
 public class ProgramResponse {
     private Long id;
     private String name;
-    private ParkInfo park;
-    private Integer totalCapacity;
-    private Integer currentCapacity;
-    private List<ScheduleInfo> schedules;
+    private List<ParkWithSchedules> parks;
+    private Integer totalCapacity; // Calculated from all schedules
+    private Integer currentCapacity; // Calculated from all schedules
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ParkInfo {
+    public static class ParkWithSchedules {
         private Long id;
         private String parkName;
         private String abbreviation;
+        private List<ScheduleInfo> schedules;
     }
 
     @Data

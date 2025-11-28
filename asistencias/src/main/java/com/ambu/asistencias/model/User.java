@@ -46,7 +46,4 @@ public class User {
 
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate = LocalDateTime.now();
-
-    @Column(nullable = false)
-    private Boolean active = true;
 }

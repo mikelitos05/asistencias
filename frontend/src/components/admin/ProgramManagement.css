@@ -9,17 +9,6 @@
     margin-bottom: 20px;
 }
 
-.program-management {
-    padding: 20px;
-}
-
-.header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
 .programs-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -29,7 +18,7 @@
 .program-card {
     background: white;
     border-radius: 8px;
-    padding: 15px;
+    padding: 25px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
 }
@@ -37,41 +26,117 @@
 .program-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    align-items: flex-start;
+    margin-bottom: 20px;
     border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    padding-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.program-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.program-info h3 {
+    margin: 0 0 10px 0;
+}
+
+.parks-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.park-badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.program-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.schedule-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .capacity-badge {
     background: #e0f2fe;
-    /* Sky 100 */
     color: #0369a1;
-    /* Sky 700 */
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.9em;
     font-weight: 500;
 }
 
-.schedules-section h4 {
-    margin: 10px 0;
-    color: #64748b;
+/* Park sections within program cards */
+.park-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border-left: 3px solid #3b82f6;
 }
 
-.schedules-section ul {
+.park-section h4 {
+    margin: 0 0 12px 0;
+    color: #1e40af;
+    font-size: 1.1em;
+}
+
+.park-section ul {
     list-style: none;
     padding: 0;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
-.schedules-section li {
+.park-section li {
     padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
     font-size: 0.9em;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.park-section li:last-child {
+    border-bottom: none;
+}
+
+.schedule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.schedule-capacity {
+    margin-left: 8px;
+    color: #64748b;
+    font-size: 0.9em;
+}
+
+.no-schedules {
+    color: #94a3b8;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.schedules-section h4 {
+    margin: 10px 0;
+    color: #64748b;
 }
 
 .btn-sm {
@@ -116,6 +181,48 @@
     padding: 8px;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
+}
+
+/* Park checkbox list */
+.parks-checkbox-list {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.checkbox-label:hover {
+    background: #f1f5f9;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.info-message {
+    background: #dbeafe;
+    border-left: 3px solid #3b82f6;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 15px 0;
+    font-size: 0.9em;
+    color: #1e40af;
+}
+
+.info-message strong {
+    font-weight: 600;
 }
 
 .modal-actions {
@@ -184,10 +291,9 @@
     background-color: #475569;
 }
 
-.btn-edit {
-    background-color: #f59e0b;
-    /* Amber 500 */
-    color: white;
+.btn-soft-yellow {
+    background-color: #fef3c7;
+    color: #92400e;
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 6px;
@@ -196,22 +302,21 @@
     transition: all 0.2s;
 }
 
-.btn-edit:hover {
-    background-color: #d97706;
-    /* Amber 600 */
+.btn-soft-yellow:hover {
+    background-color: #fde68a;
 }
 
-.btn-edit-sm {
-    background-color: #f59e0b;
-    color: white;
+.btn-soft-red {
+    background-color: #fee2e2;
+    color: #991b1b;
     border: none;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8em;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.btn-edit-sm:hover {
-    background-color: #d97706;
+.btn-soft-red:hover {
+    background-color: #fecaca;
 }

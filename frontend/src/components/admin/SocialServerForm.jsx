@@ -87,15 +87,24 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
   useEffect(() => {
     if (selectedProgramId) {
       const program = programs.find(p => p.id === parseInt(selectedProgramId));
-      if (program) {
-        setAvailableSchedules(program.schedules || []);
+      if (program && program.parks) {
+        // Flatten all schedules from all parks in the program
+        const allSchedules = program.parks.flatMap(park => park.schedules || []);
+
+        // If a specific park is selected, filter to only show schedules for that park
+        if (formData.parkId) {
+          const selectedPark = program.parks.find(park => park.id === parseInt(formData.parkId));
+          setAvailableSchedules(selectedPark ? (selectedPark.schedules || []) : []);
+        } else {
+          setAvailableSchedules(allSchedules);
+        }
       } else {
         setAvailableSchedules([]);
       }
     } else {
       setAvailableSchedules([]);
     }
-  }, [selectedProgramId, programs]);
+  }, [selectedProgramId, programs, formData.parkId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -282,7 +291,7 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
                 <select value={selectedProgramId} onChange={handleProgramChange} required>
                   <option value="">Seleccione un programa</option>
                   {programs
-                    .filter(p => !formData.parkId || p.park.id === parseInt(formData.parkId))
+                    .filter(p => !formData.parkId || (p.parks && p.parks.some(park => park.id === parseInt(formData.parkId))))
                     .map(program => (
                       <option key={program.id} value={program.id}>
                         {program.name} (Capacidad: {program.currentCapacity})

@@ -20,10 +20,10 @@ const ProgramManagement = () => {
 
     const [programForm, setProgramForm] = useState({
         name: '',
-        parkId: '',
-        totalCapacity: ''
+        parkIds: [] // Changed from parkId to parkIds array
     });
     const [scheduleForm, setScheduleForm] = useState({
+        parkId: '', // NEW: park selector for schedule
         days: '',
         startTime: '09:00',
         endTime: '17:00',
@@ -55,6 +55,12 @@ const ProgramManagement = () => {
 
     const handleCreateProgram = async (e) => {
         e.preventDefault();
+
+        if (programForm.parkIds.length === 0) {
+            alert('Debe seleccionar al menos un parque');
+            return;
+        }
+
         try {
             if (isEditingProgram) {
                 await programService.updateProgram(editingProgramId, programForm);
@@ -76,25 +82,23 @@ const ProgramManagement = () => {
 
         if (!selectedProgram) return;
 
-        // Validar que la capacidad sea un número positivo
-        const newCapacity = parseInt(scheduleForm.capacity);
-        if (!newCapacity || newCapacity <= 0) {
-            alert('La capacidad debe ser un número mayor a 0');
+        // Validate park is selected
+        if (!scheduleForm.parkId) {
+            alert('Debe seleccionar un parque');
             return;
         }
 
-        // Calcular la capacidad acumulada actual de los horarios existentes
-        // Si estamos editando, excluimos el horario actual de la suma
-        const currentTotalScheduleCapacity = selectedProgram.schedules
-            ? selectedProgram.schedules.reduce((sum, sch) => {
-                if (isEditingSchedule && sch.id === editingScheduleId) return sum;
-                return sum + (sch.capacity || 0);
-            }, 0)
-            : 0;
+        // Validate park belongs to program
+        const parkExists = selectedProgram.parks.some(p => p.id === parseInt(scheduleForm.parkId));
+        if (!parkExists) {
+            alert('El parque seleccionado no pertenece a este programa');
+            return;
+        }
 
-        // Validar que la suma no exceda la capacidad total del programa
-        if (currentTotalScheduleCapacity + newCapacity > selectedProgram.totalCapacity) {
-            alert(`La suma de las capacidades de los horarios (${currentTotalScheduleCapacity + newCapacity}) excede la capacidad total del programa (${selectedProgram.totalCapacity})`);
+        // Validate capacity
+        const newCapacity = parseInt(scheduleForm.capacity);
+        if (!newCapacity || newCapacity <= 0) {
+            alert('La capacidad debe ser un número mayor a 0');
             return;
         }
 
@@ -112,10 +116,48 @@ const ProgramManagement = () => {
         }
     };
 
+    const handleDeleteProgram = async (programId) => {
+        if (!window.confirm('¿Estás seguro de que deseas eliminar este programa? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const affectedServers = await programService.deleteProgram(programId);
+            loadPrograms();
+            if (affectedServers && affectedServers.length > 0) {
+                alert(`Se eliminó el programa. Los siguientes servidores sociales fueron desvinculados:\n- ${affectedServers.join('\n- ')}`);
+            } else {
+                alert('Programa eliminado exitosamente');
+            }
+        } catch (error) {
+            console.error('Error deleting program:', error);
+            alert(error.response?.data?.message || 'Error al eliminar el programa');
+        }
+    };
+
+    const handleDeleteSchedule = async (programId, scheduleId) => {
+        if (!window.confirm('¿Estás seguro de que deseas eliminar este horario? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const affectedServers = await programService.deleteSchedule(programId, scheduleId);
+            loadPrograms();
+            if (affectedServers && affectedServers.length > 0) {
+                alert(`Se eliminó el horario. Los siguientes servidores sociales fueron desvinculados:\n- ${affectedServers.join('\n- ')}`);
+            } else {
+                alert('Horario eliminado exitosamente');
+            }
+        } catch (error) {
+            console.error('Error deleting schedule:', error);
+            alert(error.response?.data?.message || 'Error al eliminar el horario');
+        }
+    };
+
     const openCreateProgramModal = () => {
         setIsEditingProgram(false);
         setEditingProgramId(null);
-        setProgramForm({ name: '', parkId: '', totalCapacity: '' });
+        setProgramForm({ name: '', parkIds: [] });
         setShowProgramModal(true);
     };
 
@@ -124,8 +166,7 @@ const ProgramManagement = () => {
         setEditingProgramId(program.id);
         setProgramForm({
             name: program.name,
-            parkId: program.park.id,
-            totalCapacity: program.totalCapacity
+            parkIds: program.parks.map(p => p.id)
         });
         setShowProgramModal(true);
     };
@@ -134,22 +175,23 @@ const ProgramManagement = () => {
         setShowProgramModal(false);
         setIsEditingProgram(false);
         setEditingProgramId(null);
-        setProgramForm({ name: '', parkId: '', totalCapacity: '' });
+        setProgramForm({ name: '', parkIds: [] });
     };
 
     const openCreateScheduleModal = (programId) => {
         setSelectedProgramId(programId);
         setIsEditingSchedule(false);
         setEditingScheduleId(null);
-        setScheduleForm({ days: '', startTime: '09:00', endTime: '17:00', capacity: '' });
+        setScheduleForm({ parkId: '', days: '', startTime: '09:00', endTime: '17:00', capacity: '' });
         setShowScheduleModal(true);
     };
 
-    const openEditScheduleModal = (programId, schedule) => {
+    const openEditScheduleModal = (programId, schedule, parkId) => {
         setSelectedProgramId(programId);
         setIsEditingSchedule(true);
         setEditingScheduleId(schedule.id);
         setScheduleForm({
+            parkId: parkId,
             days: schedule.days,
             startTime: schedule.startTime,
             endTime: schedule.endTime,
@@ -162,7 +204,29 @@ const ProgramManagement = () => {
         setShowScheduleModal(false);
         setIsEditingSchedule(false);
         setEditingScheduleId(null);
-        setScheduleForm({ days: '', startTime: '09:00', endTime: '17:00', capacity: '' });
+        setScheduleForm({ parkId: '', days: '', startTime: '09:00', endTime: '17:00', capacity: '' });
+    };
+
+    const formatDays = (days) => {
+        if (!days) return '';
+        const allWeekDays = 'Lunes, Martes, Miércoles, Jueves, Viernes';
+        if (days === allWeekDays) {
+            return 'Lunes a Viernes';
+        }
+        return days;
+    };
+
+    const handleParkToggle = (parkId) => {
+        setProgramForm(prev => {
+            const parkIds = [...prev.parkIds];
+            const index = parkIds.indexOf(parkId);
+            if (index > -1) {
+                parkIds.splice(index, 1);
+            } else {
+                parkIds.push(parkId);
+            }
+            return { ...prev, parkIds };
+        });
     };
 
     return (
@@ -178,13 +242,17 @@ const ProgramManagement = () => {
                 {programs.map(program => (
                     <div key={program.id} className="program-card">
                         <div className="program-header">
-                            <div>
+                            <div className="program-info">
                                 <h3>{program.name}</h3>
-                                <span className="park-badge">{program.park.parkName}</span>
+                                <div className="parks-badges">
+                                    {program.parks.map(park => (
+                                        <span key={park.id} className="park-badge">{park.parkName}</span>
+                                    ))}
+                                </div>
                             </div>
                             <div className="program-actions">
                                 <span className="capacity-badge">
-                                    {program.currentCapacity}/{program.totalCapacity}
+                                    Capacidad Total: {program.currentCapacity}/{program.totalCapacity}
                                 </span>
                                 <button
                                     className="btn-soft-yellow"
@@ -193,43 +261,63 @@ const ProgramManagement = () => {
                                 >
                                     Editar
                                 </button>
+                                <button
+                                    className="btn-soft-red"
+                                    onClick={() => handleDeleteProgram(program.id)}
+                                    title="Eliminar Programa"
+                                >
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
 
-                        <div className="schedules-section">
-                            <h4>Horarios:</h4>
-                            {program.schedules && program.schedules.length > 0 ? (
-                                <ul>
-                                    {program.schedules.map(schedule => (
-                                        <li key={schedule.id} className="schedule-item">
-                                            <span>
-                                                {schedule.days}: {schedule.startTime} - {schedule.endTime}
-                                                {schedule.capacity && (
-                                                    <span className="schedule-capacity">
-                                                        (Cap: {schedule.currentCapacity !== undefined ? schedule.currentCapacity : schedule.capacity}/{schedule.capacity})
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <button
-                                                className="btn-soft-yellow"
-                                                onClick={() => openEditScheduleModal(program.id, schedule)}
-                                                title="Editar Horario"
-                                            >
-                                                Editar
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="no-schedules">No hay horarios configurados</p>
-                            )}
-                            <button
-                                className="btn-sm btn-secondary"
-                                onClick={() => openCreateScheduleModal(program.id)}
-                            >
-                                Agregar Horario
-                            </button>
-                        </div>
+                        {/* Show parks with their schedules */}
+                        {program.parks.map(park => (
+                            <div key={park.id} className="park-section">
+                                <h4>{park.parkName}</h4>
+                                {park.schedules && park.schedules.length > 0 ? (
+                                    <ul>
+                                        {park.schedules.map(schedule => (
+                                            <li key={schedule.id} className="schedule-item">
+                                                <span>
+                                                    {formatDays(schedule.days)}: {schedule.startTime} - {schedule.endTime}
+                                                    {schedule.capacity && (
+                                                        <span className="schedule-capacity">
+                                                            (Cap: {schedule.currentCapacity !== undefined ? schedule.currentCapacity : schedule.capacity}/{schedule.capacity})
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <div className="schedule-actions">
+                                                    <button
+                                                        className="btn-soft-yellow"
+                                                        onClick={() => openEditScheduleModal(program.id, schedule, park.id)}
+                                                        title="Editar Horario"
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        className="btn-soft-red"
+                                                        onClick={() => handleDeleteSchedule(program.id, schedule.id)}
+                                                        title="Eliminar Horario"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="no-schedules">No hay horarios configurados para este parque</p>
+                                )}
+                            </div>
+                        ))}
+
+                        <button
+                            className="btn-sm btn-secondary"
+                            onClick={() => openCreateScheduleModal(program.id)}
+                        >
+                            Agregar Horario
+                        </button>
                     </div>
                 ))}
             </div>
@@ -249,26 +337,22 @@ const ProgramManagement = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Parque</label>
-                                <select
-                                    value={programForm.parkId}
-                                    onChange={e => setProgramForm({ ...programForm, parkId: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Seleccione un parque</option>
+                                <label>Parques (seleccione uno o más)</label>
+                                <div className="parks-checkbox-list">
                                     {parks.map(park => (
-                                        <option key={park.id} value={park.id}>{park.parkName}</option>
+                                        <label key={park.id} className="checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={programForm.parkIds.includes(park.id)}
+                                                onChange={() => handleParkToggle(park.id)}
+                                            />
+                                            {park.parkName}
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Capacidad Total</label>
-                                <input
-                                    type="number"
-                                    value={programForm.totalCapacity}
-                                    onChange={e => setProgramForm({ ...programForm, totalCapacity: e.target.value })}
-                                    required
-                                />
+                            <div className="info-message">
+                                <strong>Nota:</strong> La capacidad total se calculará automáticamente según los horarios que agregue.
                             </div>
                             <div className="modal-actions">
                                 <button type="button" onClick={closeProgramModal}>Cancelar</button>
@@ -284,6 +368,19 @@ const ProgramManagement = () => {
                     <div className="modal-content">
                         <h3>{isEditingSchedule ? 'Editar Horario' : 'Agregar Horario'}</h3>
                         <form onSubmit={handleAddSchedule}>
+                            <div className="form-group">
+                                <label>Parque</label>
+                                <select
+                                    value={scheduleForm.parkId}
+                                    onChange={e => setScheduleForm({ ...scheduleForm, parkId: parseInt(e.target.value) })}
+                                    required
+                                >
+                                    <option value="">Seleccione un parque</option>
+                                    {selectedProgramId && programs.find(p => p.id === selectedProgramId)?.parks.map(park => (
+                                        <option key={park.id} value={park.id}>{park.parkName}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="form-group">
                                 <label>Días</label>
                                 <DaySelector

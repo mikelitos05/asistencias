@@ -24,20 +24,6 @@ public class Program {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "park_id", nullable = false)
-    @JsonIgnore
-    private Park park;
-
-    @NotNull
-    @Column(name = "total_capacity", nullable = false)
-    private Integer totalCapacity;
-
-    @NotNull
-    @Column(name = "current_capacity", nullable = false)
-    private Integer currentCapacity;
-
     @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Schedule> schedules;
+    private List<ProgramPark> programParks;
 }

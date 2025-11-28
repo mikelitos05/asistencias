@@ -83,9 +83,6 @@ public class SocialServerService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontró un horario con el ID: " + request.getScheduleId()));
 
-        // Obtener el programa del horario
-        com.ambu.asistencias.model.Program program = schedule.getProgram();
-
         // Determine status
         SocialServer.Status status = SocialServer.Status
                 .valueOf(request.getStatus() != null ? request.getStatus() : "ACTIVO");
@@ -100,10 +97,6 @@ public class SocialServerService {
             // Decrementar capacidad del horario
             schedule.setCurrentCapacity(schedule.getCurrentCapacity() - 1);
             scheduleRepository.save(schedule);
-
-            // Decrementar capacidad del programa
-            program.setCurrentCapacity(program.getCurrentCapacity() - 1);
-            programRepository.save(program);
         }
 
         // Manejar foto
@@ -190,7 +183,7 @@ public class SocialServerService {
                 Files.copy(photo.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            return uploadDir + "/" + filename;
+            return "uploads/photos/" + filename;
         } catch (IOException e) {
             log.error("Error guardando la foto", e);
             throw new RuntimeException("No se pudo guardar la foto", e);
@@ -238,10 +231,6 @@ public class SocialServerService {
             if (oldStatus == SocialServer.Status.ACTIVO) {
                 oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() + 1);
                 scheduleRepository.save(oldSchedule);
-
-                com.ambu.asistencias.model.Program oldProgram = oldSchedule.getProgram();
-                oldProgram.setCurrentCapacity(oldProgram.getCurrentCapacity() + 1);
-                programRepository.save(oldProgram);
             }
 
             // If user is becoming/staying ACTIVO in new schedule, consume capacity there
@@ -251,29 +240,6 @@ public class SocialServerService {
                 }
                 newSchedule.setCurrentCapacity(newSchedule.getCurrentCapacity() - 1);
                 scheduleRepository.save(newSchedule);
-
-                com.ambu.asistencias.model.Program newProgram = newSchedule.getProgram();
-                // Note: If programs are different, we need to check capacity of new program
-                // too.
-                // If same program, we just released one spot (above) so it should be fine,
-                // unless it was full and we are taking the last spot?
-                // Actually, if we released one, we have at least 1 spot.
-                // But let's be safe and check program capacity if it's a different program or
-                // generally.
-
-                // If we released from oldProgram, and newProgram is same, capacity is +1.
-                // So checking <= 0 is correct.
-
-                // However, if we didn't release (because oldStatus was INACTIVO), we must
-                // check.
-                if (newProgram.getCurrentCapacity() <= 0) {
-                    // If we just incremented it (same program), it would be > 0.
-                    // If we didn't increment it (different program or oldStatus INACTIVO), it might
-                    // be 0.
-                    throw new IllegalStateException("El nuevo programa no tiene capacidad.");
-                }
-                newProgram.setCurrentCapacity(newProgram.getCurrentCapacity() - 1);
-                programRepository.save(newProgram);
             }
         }
         // Case 2: Schedule NOT Changed, but Status Changed
@@ -282,10 +248,6 @@ public class SocialServerService {
                 // Release capacity
                 oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() + 1);
                 scheduleRepository.save(oldSchedule);
-
-                com.ambu.asistencias.model.Program program = oldSchedule.getProgram();
-                program.setCurrentCapacity(program.getCurrentCapacity() + 1);
-                programRepository.save(program);
             } else if (oldStatus == SocialServer.Status.INACTIVO && newStatus == SocialServer.Status.ACTIVO) {
                 // Consume capacity
                 if (oldSchedule.getCurrentCapacity() <= 0) {
@@ -294,14 +256,6 @@ public class SocialServerService {
                 }
                 oldSchedule.setCurrentCapacity(oldSchedule.getCurrentCapacity() - 1);
                 scheduleRepository.save(oldSchedule);
-
-                com.ambu.asistencias.model.Program program = oldSchedule.getProgram();
-                if (program.getCurrentCapacity() <= 0) {
-                    throw new IllegalStateException(
-                            "El programa no tiene capacidad disponible para reactivar al usuario.");
-                }
-                program.setCurrentCapacity(program.getCurrentCapacity() - 1);
-                programRepository.save(program);
             }
         }
 
@@ -387,16 +341,11 @@ public class SocialServerService {
                         "No se encontró un servidor social con el ID: " + id));
 
         // Only release capacity if user was ACTIVO
-        if (socialServer.getStatus() == SocialServer.Status.ACTIVO) {
+        if (socialServer.getStatus() == SocialServer.Status.ACTIVO && socialServer.getSchedule() != null) {
             // Incrementar capacidad del horario
             com.ambu.asistencias.model.Schedule schedule = socialServer.getSchedule();
             schedule.setCurrentCapacity(schedule.getCurrentCapacity() + 1);
             scheduleRepository.save(schedule);
-
-            // Incrementar capacidad del programa
-            com.ambu.asistencias.model.Program program = schedule.getProgram();
-            program.setCurrentCapacity(program.getCurrentCapacity() + 1);
-            programRepository.save(program);
         }
 
         socialServerRepository.delete(socialServer);
@@ -412,17 +361,19 @@ public class SocialServerService {
         Long programId = null;
         String programName = null;
         Long scheduleId = null;
+        String days = null;
         LocalTime startTime = null;
         LocalTime endTime = null;
 
         if (socialServer.getSchedule() != null) {
             scheduleId = socialServer.getSchedule().getId();
+            days = socialServer.getSchedule().getDays();
             startTime = socialServer.getSchedule().getStartTime();
             endTime = socialServer.getSchedule().getEndTime();
 
-            if (socialServer.getSchedule().getProgram() != null) {
-                programId = socialServer.getSchedule().getProgram().getId();
-                programName = socialServer.getSchedule().getProgram().getName();
+            if (socialServer.getSchedule().getProgramPark() != null) {
+                programId = socialServer.getSchedule().getProgramPark().getProgram().getId();
+                programName = socialServer.getSchedule().getProgramPark().getProgram().getName();
             }
         }
 
@@ -436,6 +387,7 @@ public class SocialServerService {
                 .programId(programId)
                 .program(programName)
                 .scheduleId(scheduleId)
+                .days(days)
                 .startTime(startTime)
                 .endTime(endTime)
                 .totalHoursRequired(socialServer.getTotalHoursRequired())

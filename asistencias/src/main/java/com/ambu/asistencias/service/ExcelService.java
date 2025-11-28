@@ -39,6 +39,9 @@ public class ExcelService {
     @Autowired
     private EmergencyContactRepository emergencyContactRepository;
 
+    @Autowired
+    private com.ambu.asistencias.repository.ProgramParkRepository programParkRepository;
+
     // Helper map for Spanish month abbreviations to integers
     private static final Map<String, Integer> MONTH_MAP = new HashMap<>();
     static {
@@ -117,27 +120,41 @@ public class ExcelService {
         socialServer.setName(getStringCellValue(row, 6));
 
         // 7. Programa asignado & 8. Dias & 9. Horario
-        // Need to find or create Program and Schedule
-        String programName = getStringCellValue(row, 7);
+        // Parse "TU PARQUE CONSENTIDO/PAA" format
+        String programParkStr = getStringCellValue(row, 7);
         String days = getStringCellValue(row, 8); // L-V or S-D
-        String hours = getStringCellValue(row, 9); // e.g., "08:00 - 12:00"
+        String hours = getStringCellValue(row, 9); // e.g., "15:00-19:00"
 
-        Park defaultPark = parkRepository.findAll().stream().findFirst()
-                .orElseThrow(() -> new RuntimeException("No parks found"));
+        // Split program and park abbreviation
+        String programName;
+        String parkAbbreviation;
+        if (programParkStr.contains("/")) {
+            String[] parts = programParkStr.split("/");
+            programName = parts[0].trim();
+            parkAbbreviation = parts.length > 1 ? parts[1].trim() : "";
+        } else {
+            programName = programParkStr.trim();
+            parkAbbreviation = "";
+        }
 
+        // Find the park by abbreviation
+        Park park;
+        if (!parkAbbreviation.isEmpty()) {
+            park = parkRepository.findByAbbreviationIgnoreCase(parkAbbreviation)
+                    .orElseThrow(() -> new RuntimeException("Park not found with abbreviation: " + parkAbbreviation));
+        } else {
+            park = parkRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("No parks found"));
+        }
+
+        // Find the program by name
         Program program = programRepository.findByName(programName)
-                .orElseGet(() -> {
-                    Program newProgram = new Program();
-                    newProgram.setName(programName);
-                    newProgram.setPark(defaultPark);
-                    newProgram.setTotalCapacity(100); // Default
-                    newProgram.setCurrentCapacity(0);
-                    return programRepository.save(newProgram);
-                });
+                .orElseThrow(() -> new RuntimeException("Program not found: " + programName));
 
-        Schedule schedule = findOrCreateSchedule(program, days, hours);
+        // Find the schedule that matches program, park, days, and hours
+        Schedule schedule = findOrCreateSchedule(program, park, days, hours);
         socialServer.setSchedule(schedule);
-        socialServer.setPark(defaultPark); // Assign default park for now
+        socialServer.setPark(park);
 
         // 10. Se entrego gafete (Si/No)
         String badgeStr = getStringCellValue(row, 10);
@@ -231,7 +248,7 @@ public class ExcelService {
         socialServerRepository.save(socialServer);
     }
 
-    private Schedule findOrCreateSchedule(Program program, String days, String hours) {
+    private Schedule findOrCreateSchedule(Program program, Park park, String days, String hours) {
         // Parse hours "08:00 - 12:00"
         LocalTime start = LocalTime.of(9, 0);
         LocalTime end = LocalTime.of(13, 0);
@@ -242,28 +259,39 @@ public class ExcelService {
                 start = LocalTime.parse(parts[0].trim());
                 end = LocalTime.parse(parts[1].trim());
             } catch (Exception e) {
-                // Fallback or try simple parsing
+                // Fallback
             }
         }
 
-        // Check if exists
-        List<Schedule> schedules = scheduleRepository.findByProgram(program);
-        for (Schedule s : schedules) {
-            if (s.getDays().equalsIgnoreCase(days) &&
-                    s.getStartTime().equals(start) &&
-                    s.getEndTime().equals(end)) {
-                return s;
+        // Find or create ProgramPark
+        com.ambu.asistencias.model.ProgramPark programPark = programParkRepository
+                .findByProgramIdAndParkId(program.getId(), park.getId())
+                .orElseGet(() -> {
+                    com.ambu.asistencias.model.ProgramPark newPP = new com.ambu.asistencias.model.ProgramPark();
+                    newPP.setProgram(program);
+                    newPP.setPark(park);
+                    return programParkRepository.save(newPP);
+                });
+
+        // Check if similar schedule exists
+        if (programPark.getSchedules() != null) {
+            for (Schedule s : programPark.getSchedules()) {
+                if (s.getDays().equalsIgnoreCase(days) &&
+                        s.getStartTime().equals(start) &&
+                        s.getEndTime().equals(end)) {
+                    return s;
+                }
             }
         }
 
-        // Create new
+        // Create new schedule
         Schedule newSchedule = new Schedule();
-        newSchedule.setProgram(program);
+        newSchedule.setProgramPark(programPark);
         newSchedule.setDays(days);
         newSchedule.setStartTime(start);
         newSchedule.setEndTime(end);
         newSchedule.setCapacity(50); // Default
-        newSchedule.setCurrentCapacity(0);
+        newSchedule.setCurrentCapacity(50);
         return scheduleRepository.save(newSchedule);
     }
 

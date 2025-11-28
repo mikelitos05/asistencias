@@ -24,5 +24,15 @@ export const programService = {
     updateSchedule: async (programId, scheduleId, scheduleData) => {
         const response = await api.put(`/programs/${programId}/schedules/${scheduleId}`, scheduleData);
         return response.data;
+    },
+
+    deleteProgram: async (id) => {
+        const response = await api.delete(`/programs/${id}`);
+        return response.data;
+    },
+
+    deleteSchedule: async (programId, scheduleId) => {
+        const response = await api.delete(`/programs/${programId}/schedules/${scheduleId}`);
+        return response.data;
     }
 };

@@ -3,35 +3,52 @@ import './SocialServerList.css';
 
 const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [visibleColumns, setVisibleColumns] = useState({
-    folio: true,
-    name: true,
-    email: true,
-    school: true,
-    park: true,
-    status: true,
-    type: true,
-    vest: false,
-    badge: false,
-    startDate: false,
-    endDate: false,
-    totalHours: false,
-    cellPhone: false,
-    bloodType: false,
-    allergy: false,
-    birthDate: false,
-    major: false,
-    period: false,
-    tutorName: false,
-    tutorPhone: false,
-    enrollmentDate: false,
-    generalInductionDate: false,
-    acceptanceLetterId: false,
-    completionLetterId: false,
-    schedule: false,
-    program: false,
-  });
+
+  // Load column visibility from localStorage or use defaults
+  const getInitialColumnVisibility = () => {
+    const saved = localStorage.getItem('socialServerColumnVisibility');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error loading column preferences:', e);
+      }
+    }
+    // Default visibility
+    return {
+      folio: true,
+      name: true,
+      email: true,
+      school: true,
+      park: true,
+      status: true,
+      type: true,
+      photo: false,
+      vest: false,
+      badge: false,
+      startDate: false,
+      endDate: false,
+      totalHours: false,
+      cellPhone: false,
+      bloodType: false,
+      allergy: false,
+      birthDate: false,
+      major: false,
+      period: false,
+      tutorName: false,
+      tutorPhone: false,
+      enrollmentDate: false,
+      generalInductionDate: false,
+      acceptanceLetterId: false,
+      completionLetterId: false,
+      schedule: false,
+      program: false,
+    };
+  };
+
+  const [visibleColumns, setVisibleColumns] = useState(getInitialColumnVisibility);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
   const columnSelectorRef = React.useRef(null);
 
   useEffect(() => {
@@ -55,6 +72,7 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
     { key: 'park', label: 'Parque' },
     { key: 'status', label: 'Estado' },
     { key: 'type', label: 'Tipo' },
+    { key: 'photo', label: 'Foto' },
     { key: 'vest', label: 'Chaleco' },
     { key: 'badge', label: 'Gafete' },
     { key: 'startDate', label: 'Fecha Inicio' },
@@ -85,7 +103,12 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
   );
 
   const toggleColumn = (key) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+    setVisibleColumns(prev => {
+      const newVisibility = { ...prev, [key]: !prev[key] };
+      // Save to localStorage
+      localStorage.setItem('socialServerColumnVisibility', JSON.stringify(newVisibility));
+      return newVisibility;
+    });
   };
 
   return (
@@ -133,6 +156,7 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
               {visibleColumns.park && <th>Parque</th>}
               {visibleColumns.status && <th>Estado</th>}
               {visibleColumns.type && <th>Tipo</th>}
+              {visibleColumns.photo && <th>Foto</th>}
               {visibleColumns.vest && <th>Chaleco</th>}
               {visibleColumns.badge && <th>Gafete</th>}
               {visibleColumns.startDate && <th>Fecha Inicio</th>}
@@ -165,6 +189,7 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
                 {visibleColumns.park && <td>{server.parkName}</td>}
                 {visibleColumns.status && <td>{server.status}</td>}
                 {visibleColumns.type && <td>{server.socialServerType}</td>}
+                {visibleColumns.photo && <td>{server.photoPath ? <img src={`http://localhost:8081/${server.photoPath}`} alt="Foto" className="server-photo-thumb" onClick={() => setSelectedPhoto(`http://localhost:8081/${server.photoPath}`)} /> : <span className="no-photo">Sin foto</span>}</td>}
                 {visibleColumns.vest && <td>{server.vest === -1 ? 'No entregado' : server.vest}</td>}
                 {visibleColumns.badge && <td>{server.badge ? 'Sí' : 'No'}</td>}
                 {visibleColumns.startDate && <td>{server.startDate}</td>}
@@ -182,8 +207,8 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
                 {visibleColumns.generalInductionDate && <td>{server.generalInductionDate}</td>}
                 {visibleColumns.acceptanceLetterId && <td>{server.acceptanceLetterId}</td>}
                 {visibleColumns.completionLetterId && <td>{server.completionLetterId}</td>}
-                {visibleColumns.schedule && <td>{server.schedule ? `${server.schedule.days} ${server.schedule.startTime} - ${server.schedule.endTime}` : 'N/A'}</td>}
-                {visibleColumns.program && <td>{server.schedule?.program?.name || 'N/A'}</td>}
+                {visibleColumns.schedule && <td>{server.days && server.startTime && server.endTime ? `${server.days} ${server.startTime} - ${server.endTime}` : 'N/A'}</td>}
+                {visibleColumns.program && <td>{server.program || 'N/A'}</td>}
                 <td>
                   <div className="action-buttons">
                     <button
@@ -214,6 +239,15 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
           </tbody>
         </table>
       </div>
+
+      {selectedPhoto && (
+        <div className="modal-overlay" onClick={() => setSelectedPhoto(null)}>
+          <div className="photo-modal" onClick={(e) => e.stopPropagation()}>
+            <img src={selectedPhoto} alt="Foto completa" className="full-size-photo" />
+            <button className="close-btn-photo" onClick={() => setSelectedPhoto(null)}>×</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

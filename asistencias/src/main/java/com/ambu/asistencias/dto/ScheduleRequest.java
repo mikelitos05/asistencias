@@ -15,6 +15,9 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class ScheduleRequest {
 
+    @NotNull(message = "El ID del parque es obligatorio")
+    private Long parkId;
+
     @NotBlank(message = "Los días son obligatorios")
     private String days;
 

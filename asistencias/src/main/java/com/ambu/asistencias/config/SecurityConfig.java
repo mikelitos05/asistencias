@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("POST", apiPrefix + "/asistencias").permitAll()
                         .requestMatchers("GET", apiPrefix + "/parques").permitAll()
                         .requestMatchers("GET", apiPrefix + "/parques/{id}").permitAll()
+                        .requestMatchers("/uploads/**").permitAll() // Allow public access to uploaded photos
 
                         // Endpoints de parques - ADMIN y SUPER_ADMIN pueden crear, actualizar y
                         // eliminar
