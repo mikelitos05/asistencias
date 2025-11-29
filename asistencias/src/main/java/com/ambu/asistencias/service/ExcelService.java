@@ -245,6 +245,17 @@ public class ExcelService {
         // 26. No. Oficio termino
         socialServer.setCompletionLetterId(getStringCellValue(row, 26));
 
+        // Decrement capacity if social server is ACTIVO
+        if (socialServer.getStatus() == SocialServer.Status.ACTIVO) {
+            // Decrement schedule capacity
+            if (schedule.getCurrentCapacity() != null && schedule.getCurrentCapacity() > 0) {
+                schedule.setCurrentCapacity(schedule.getCurrentCapacity() - 1);
+                scheduleRepository.save(schedule);
+            } else {
+                System.err.println("Warning: Schedule " + schedule.getId() + " has no available capacity");
+            }
+        }
+
         socialServerRepository.save(socialServer);
     }
 
