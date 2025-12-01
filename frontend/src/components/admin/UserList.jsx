@@ -14,14 +14,13 @@ const UserList = ({ users, onEdit, onDelete }) => {
               <th>Correo</th>
               <th>Rol</th>
               <th>Fecha de Registro</th>
-              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan="7" className="no-data">
+                <td colSpan="6" className="no-data">
                   No hay usuarios registrados
                 </td>
               </tr>
@@ -37,11 +36,6 @@ const UserList = ({ users, onEdit, onDelete }) => {
                     </span>
                   </td>
                   <td>{formatDate(user.registrationDate)}</td>
-                  <td>
-                    <span className={`status-badge ${user.active ? 'active' : 'inactive'}`}>
-                      {user.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
                   <td>
                     <div className="action-buttons">
                       <button

@@ -37,15 +37,13 @@ const Navbar = () => {
               <Link to="/admin/programas" className="navbar-link">
                 Programas
               </Link>
+              <Link to="/admin/servidores-sociales" className="navbar-link">
+                Servidores Sociales
+              </Link>
               {isSuperAdmin && (
-                <>
-                  <Link to="/admin/servidores-sociales" className="navbar-link">
-                    Servidores Sociales
-                  </Link>
-                  <Link to="/admin/usuarios" className="navbar-link">
-                    Usuarios
-                  </Link>
-                </>
+                <Link to="/admin/usuarios" className="navbar-link">
+                  Usuarios
+                </Link>
               )}
             </>
           )}
@@ -63,4 +61,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
