@@ -88,6 +88,36 @@
   text-decoration: underline;
 }
 
+/* Location column styles */
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.address-text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.map-link {
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.map-link:hover {
+  transform: scale(1.2);
+}
+
+.no-location {
+  color: #999;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .attendances-table {
     font-size: 0.9rem;
@@ -98,4 +128,3 @@
     padding: 0.5rem;
   }
 }
-

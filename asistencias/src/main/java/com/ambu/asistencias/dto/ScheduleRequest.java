@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,8 +16,8 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class ScheduleRequest {
 
-    @NotNull(message = "El ID del parque es obligatorio")
-    private Long parkId;
+    @NotNull(message = "Debe seleccionar al menos un parque")
+    private List<Long> parkIds; // Cambiado para soportar múltiples parques
 
     @NotBlank(message = "Los días son obligatorios")
     private String days;
@@ -29,4 +30,8 @@ public class ScheduleRequest {
 
     @NotNull(message = "La capacidad es obligatoria")
     private Integer capacity;
+
+    private String career; // Campo opcional para la carrera
+
+    private String notes; // Campo opcional para notas adicionales
 }

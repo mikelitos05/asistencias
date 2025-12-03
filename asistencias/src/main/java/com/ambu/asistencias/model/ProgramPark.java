@@ -30,6 +30,6 @@ public class ProgramPark {
     @JsonIgnore
     private Park park;
 
-    @OneToMany(mappedBy = "programPark", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(mappedBy = "programParks")
     private List<Schedule> schedules;
 }

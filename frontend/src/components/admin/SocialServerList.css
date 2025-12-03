@@ -447,3 +447,14 @@
     padding: 0.4rem;
   }
 }
+.clickable-name {
+  color: #3b82f6;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.clickable-name:hover {
+  color: #1d4ed8;
+  text-decoration: none;
+}

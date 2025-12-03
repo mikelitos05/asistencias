@@ -288,6 +288,16 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
   // Render cell content
   const renderCellContent = (server, column) => {
     switch (column.key) {
+      case 'name':
+        return (
+          <span
+            className="clickable-name"
+            onClick={() => onViewAttendances(server.id)}
+            title="Ver asistencias"
+          >
+            {server.name}
+          </span>
+        );
       case 'photo':
         return server.photoPath ? (
           <img
@@ -419,6 +429,7 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
         <table className="data-table">
           <thead>
             <tr>
+              <th className="actions-header">Acciones</th>
               {orderedVisibleColumns.map((column) => (
                 <th
                   key={column.key}
@@ -437,25 +448,19 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
                   </span>
                 </th>
               ))}
-              <th className="actions-header">Acciones</th>
             </tr>
             <tr className="filter-row">
+              <td></td>
               {orderedVisibleColumns.map((column) => (
                 <td key={`filter-${column.key}`}>
                   {renderFilterInput(column)}
                 </td>
               ))}
-              <td></td>
             </tr>
           </thead>
           <tbody>
             {filteredServers.map((server) => (
               <tr key={server.id}>
-                {orderedVisibleColumns.map((column) => (
-                  <td key={`${server.id}-${column.key}`}>
-                    {renderCellContent(server, column)}
-                  </td>
-                ))}
                 <td>
                   <div className="action-buttons">
                     <button
@@ -481,6 +486,11 @@ const SocialServerList = ({ socialServers, onEdit, onDelete, onViewAttendances }
                     </button>
                   </div>
                 </td>
+                {orderedVisibleColumns.map((column) => (
+                  <td key={`${server.id}-${column.key}`}>
+                    {renderCellContent(server, column)}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

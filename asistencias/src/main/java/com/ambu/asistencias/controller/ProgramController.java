@@ -79,26 +79,37 @@ public class ProgramController {
                         @RequestBody @Valid ScheduleRequest request) {
 
                 return programRepository.findById(programId).map(program -> {
-                        // Find or validate the ProgramPark association
-                        ProgramPark programPark = programParkRepository
-                                        .findByProgramIdAndParkId(programId, request.getParkId())
-                                        .orElseThrow(() -> new IllegalArgumentException(
-                                                        "El parque con ID " + request.getParkId()
-                                                                        + " no está asociado a este programa"));
-
                         // Validate capacity
                         if (request.getCapacity() == null || request.getCapacity() <= 0) {
                                 throw new IllegalArgumentException("La capacidad debe ser un número mayor a 0");
                         }
 
-                        // Create schedule
+                        // Validate parkIds
+                        if (request.getParkIds() == null || request.getParkIds().isEmpty()) {
+                                throw new IllegalArgumentException("Debe seleccionar al menos un parque");
+                        }
+
+                        // Collect all ProgramParks
+                        List<ProgramPark> programParksList = new ArrayList<>();
+                        for (Long parkId : request.getParkIds()) {
+                                ProgramPark programPark = programParkRepository
+                                                .findByProgramIdAndParkId(programId, parkId)
+                                                .orElseThrow(() -> new IllegalArgumentException(
+                                                                "El parque con ID " + parkId
+                                                                                + " no está asociado a este programa"));
+                                programParksList.add(programPark);
+                        }
+
+                        // Create ONE schedule with multiple parks
                         Schedule schedule = Schedule.builder()
-                                        .programPark(programPark)
+                                        .programParks(programParksList)
                                         .days(request.getDays())
                                         .startTime(request.getStartTime())
                                         .endTime(request.getEndTime())
                                         .capacity(request.getCapacity())
                                         .currentCapacity(request.getCapacity())
+                                        .career(request.getCareer())
+                                        .notes(request.getNotes())
                                         .build();
 
                         scheduleRepository.save(schedule);
@@ -170,19 +181,33 @@ public class ProgramController {
                                                         "Schedule not found with id " + scheduleId));
 
                         // Verify schedule belongs to this program
-                        if (!schedule.getProgramPark().getProgram().getId().equals(programId)) {
-                                throw new IllegalArgumentException("El horario no pertenece al programa especificado");
+                        if (schedule.getProgramParks() != null && !schedule.getProgramParks().isEmpty()) {
+                                boolean belongsToProgram = schedule.getProgramParks().stream()
+                                                .anyMatch(pp -> pp.getProgram().getId().equals(programId));
+                                if (!belongsToProgram) {
+                                        throw new IllegalArgumentException(
+                                                        "El horario no pertenece al programa especificado");
+                                }
                         }
 
-                        // If park changed, find/create new ProgramPark
-                        if (!schedule.getProgramPark().getPark().getId().equals(request.getParkId())) {
-                                ProgramPark newProgramPark = programParkRepository
-                                                .findByProgramIdAndParkId(programId, request.getParkId())
-                                                .orElseThrow(() -> new IllegalArgumentException(
-                                                                "El parque con ID " + request.getParkId()
-                                                                                + " no está asociado a este programa"));
-                                schedule.setProgramPark(newProgramPark);
+                        // Validate parkIds
+                        if (request.getParkIds() == null || request.getParkIds().isEmpty()) {
+                                throw new IllegalArgumentException("Debe seleccionar al menos un parque");
                         }
+
+                        // Collect new ProgramParks
+                        List<ProgramPark> newProgramParks = new ArrayList<>();
+                        for (Long parkId : request.getParkIds()) {
+                                ProgramPark programPark = programParkRepository
+                                                .findByProgramIdAndParkId(programId, parkId)
+                                                .orElseThrow(() -> new IllegalArgumentException(
+                                                                "El parque con ID " + parkId
+                                                                                + " no está asociado a este programa"));
+                                newProgramParks.add(programPark);
+                        }
+
+                        // Update parks
+                        schedule.setProgramParks(newProgramParks);
 
                         // Validate capacity change
                         if (!schedule.getCapacity().equals(request.getCapacity())) {
@@ -200,6 +225,8 @@ public class ProgramController {
                         schedule.setDays(request.getDays());
                         schedule.setStartTime(request.getStartTime());
                         schedule.setEndTime(request.getEndTime());
+                        schedule.setCareer(request.getCareer());
+                        schedule.setNotes(request.getNotes());
 
                         scheduleRepository.save(schedule);
 
@@ -217,12 +244,34 @@ public class ProgramController {
                 int totalCapacity = 0;
                 int currentCapacity = 0;
 
+                // Get all schedules for this program
+                List<Schedule> allSchedules = scheduleRepository.findAll().stream()
+                                .filter(s -> s.getProgramParks() != null && !s.getProgramParks().isEmpty())
+                                .filter(s -> s.getProgramParks().stream()
+                                                .anyMatch(pp -> pp.getProgram().getId().equals(program.getId())))
+                                .collect(Collectors.toList());
+
+                // Count capacity only once per schedule
+                for (Schedule schedule : allSchedules) {
+                        totalCapacity += schedule.getCapacity();
+                        currentCapacity += schedule.getCurrentCapacity();
+                }
+
                 if (program.getProgramParks() != null) {
                         for (ProgramPark pp : program.getProgramParks()) {
                                 List<ProgramResponse.ScheduleInfo> scheduleInfos = new ArrayList<>();
 
-                                if (pp.getSchedules() != null) {
-                                        for (Schedule schedule : pp.getSchedules()) {
+                                // Find schedules that include this park
+                                for (Schedule schedule : allSchedules) {
+                                        boolean includesThisPark = schedule.getProgramParks().stream()
+                                                        .anyMatch(schedulePp -> schedulePp.getId().equals(pp.getId()));
+
+                                        if (includesThisPark) {
+                                                // Get all park IDs for this schedule
+                                                List<Long> parkIds = schedule.getProgramParks().stream()
+                                                                .map(schedulePp -> schedulePp.getPark().getId())
+                                                                .collect(Collectors.toList());
+
                                                 scheduleInfos.add(ProgramResponse.ScheduleInfo.builder()
                                                                 .id(schedule.getId())
                                                                 .days(schedule.getDays())
@@ -230,10 +279,10 @@ public class ProgramController {
                                                                 .endTime(schedule.getEndTime())
                                                                 .capacity(schedule.getCapacity())
                                                                 .currentCapacity(schedule.getCurrentCapacity())
+                                                                .career(schedule.getCareer())
+                                                                .notes(schedule.getNotes())
+                                                                .parkIds(parkIds)
                                                                 .build());
-
-                                                totalCapacity += schedule.getCapacity();
-                                                currentCapacity += schedule.getCurrentCapacity();
                                         }
                                 }
 
@@ -300,7 +349,10 @@ public class ProgramController {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Schedule not found with id " + scheduleId));
 
-                if (!schedule.getProgramPark().getProgram().getId().equals(programId)) {
+                boolean belongsToProgram = schedule.getProgramParks().stream()
+                                .anyMatch(pp -> pp.getProgram().getId().equals(programId));
+
+                if (!belongsToProgram) {
                         throw new IllegalArgumentException("El horario no pertenece al programa especificado");
                 }
 

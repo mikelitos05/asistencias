@@ -20,5 +20,7 @@ public class AttendanceResponse {
     private String type;
     private String photoPath;
     private String message;
+    private Double latitude;
+    private Double longitude;
+    private String address;
 }
-

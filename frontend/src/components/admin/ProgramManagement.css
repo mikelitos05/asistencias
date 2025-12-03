@@ -117,15 +117,89 @@
 
 .schedule-item {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-main-info {
+    display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.schedule-main-info>span {
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .schedule-capacity {
     margin-left: 8px;
     color: #64748b;
     font-size: 0.9em;
+}
+
+.schedule-career {
+    margin-left: 8px;
+    color: #059669;
+    font-size: 0.9em;
+    font-weight: 500;
+    font-style: italic;
+    display: inline-block;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.optional-label {
+    color: #94a3b8;
+    font-size: 0.85em;
+    font-weight: 400;
+    font-style: italic;
+}
+
+.schedule-notes {
+    background: #f8fafc;
+    border-left: 3px solid #8b5cf6;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #475569;
+    line-height: 1.5;
+    margin-top: 4px;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+}
+
+.schedule-multi-parks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.multi-parks-label {
+    font-size: 0.85em;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.multi-park-badge {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 500;
 }
 
 .no-schedules {
@@ -176,11 +250,18 @@
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 8px;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
 }
 
 /* Park checkbox list */

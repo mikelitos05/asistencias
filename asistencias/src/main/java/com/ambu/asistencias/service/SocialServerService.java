@@ -371,9 +371,11 @@ public class SocialServerService {
             startTime = socialServer.getSchedule().getStartTime();
             endTime = socialServer.getSchedule().getEndTime();
 
-            if (socialServer.getSchedule().getProgramPark() != null) {
-                programId = socialServer.getSchedule().getProgramPark().getProgram().getId();
-                programName = socialServer.getSchedule().getProgramPark().getProgram().getName();
+            // Get the first programPark if available (for backwards compatibility)
+            if (socialServer.getSchedule().getProgramParks() != null &&
+                    !socialServer.getSchedule().getProgramParks().isEmpty()) {
+                programId = socialServer.getSchedule().getProgramParks().get(0).getProgram().getId();
+                programName = socialServer.getSchedule().getProgramParks().get(0).getProgram().getName();
             }
         }
 

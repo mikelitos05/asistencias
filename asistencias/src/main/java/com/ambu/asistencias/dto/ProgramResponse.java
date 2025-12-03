@@ -41,5 +41,8 @@ public class ProgramResponse {
         private LocalTime endTime;
         private Integer capacity;
         private Integer currentCapacity;
+        private String career;
+        private String notes;
+        private List<Long> parkIds; // IDs de los parques asociados a este horario
     }
 }

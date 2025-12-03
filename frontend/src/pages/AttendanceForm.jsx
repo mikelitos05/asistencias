@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { attendanceService } from '../services/attendanceService';
 import { parkService } from '../services/parkService';
 import { ATTENDANCE_TYPES, ATTENDANCE_TYPE_LABELS } from '../utils/constants';
@@ -14,6 +14,9 @@ function AttendanceForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingParks, setLoadingParks] = useState(true);
+  const [location, setLocation] = useState(null); // {latitude, longitude, address}
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   useEffect(() => {
     loadParks();
@@ -30,6 +33,75 @@ function AttendanceForm() {
       setLoadingParks(false);
     }
   };
+
+  const getAddressFromCoordinates = useCallback(async (latitude, longitude) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=es`
+      );
+      const data = await response.json();
+
+      if (data && data.display_name) {
+        return data.display_name;
+      }
+
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    } catch (error) {
+      console.error('Error en reverse geocoding:', error);
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    }
+  }, []);
+
+  const captureLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Tu navegador no soporta geolocalización');
+      return;
+    }
+
+    setLoadingLocation(true);
+    setLocationError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        const address = await getAddressFromCoordinates(latitude, longitude);
+
+        setLocation({
+          latitude,
+          longitude,
+          address
+        });
+        setLoadingLocation(false);
+      },
+      (error) => {
+        setLoadingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError('Permisos de ubicación denegados. Por favor, permite el acceso a tu ubicación.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError('Ubicación no disponible.');
+            break;
+          case error.TIMEOUT:
+            setLocationError('Tiempo de espera agotado al obtener ubicación.');
+            break;
+          default:
+            setLocationError('Error desconocido al obtener ubicación.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }, [getAddressFromCoordinates]);
+
+  useEffect(() => {
+    captureLocation();
+  }, [captureLocation]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,18 +122,28 @@ function AttendanceForm() {
         type: type,
       };
 
+      // Agregar ubicación si está disponible
+      if (location) {
+        attendanceData.latitude = location.latitude;
+        attendanceData.longitude = location.longitude;
+        attendanceData.address = location.address;
+      }
+
       const response = await attendanceService.register(attendanceData, image);
       setMessage(response.message || 'Asistencia registrada exitosamente');
-      
+
       // Limpiar formulario
       setFolio('');
       setParkId('');
       setType('');
       setImage(null);
+
+      // Recapturar ubicación para el siguiente registro
+      captureLocation();
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 
-                          err.message || 
-                          'Error al registrar la asistencia';
+      const errorMessage = err.response?.data?.message ||
+        err.message ||
+        'Error al registrar la asistencia';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -112,6 +194,35 @@ function AttendanceForm() {
         </div>
 
         <div className="form-group">
+          <label>Ubicación</label>
+          {loadingLocation ? (
+            <div className="location-status loading">
+              📍 Obteniendo ubicación... Por favor espera
+            </div>
+          ) : locationError ? (
+            <div className="location-status error">
+              ⚠️ {locationError}
+              <button
+                type="button"
+                onClick={captureLocation}
+                className="retry-location-btn"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : location ? (
+            <div className="location-status success">
+              ✅ Ubicación obtenida:<br />
+              <small>{location.address}</small>
+            </div>
+          ) : (
+            <div className="location-status">
+              Ubicación no disponible
+            </div>
+          )}
+        </div>
+
+        <div className="form-group">
           <label htmlFor="type">Tipo de Registro</label>
           <select
             id="type"
@@ -154,8 +265,8 @@ function AttendanceForm() {
         {error && <div className="error-message">{error}</div>}
         {message && <div className="success-message">{message}</div>}
 
-        <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? 'Registrando...' : 'Registrar Asistencia'}
+        <button type="submit" disabled={loading || loadingLocation} className="submit-btn">
+          {loading ? 'Registrando...' : loadingLocation ? 'Esperando ubicación...' : 'Registrar Asistencia'}
         </button>
       </form>
     </div>

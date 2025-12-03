@@ -49,4 +49,14 @@ public class Attendance {
     @Column(name = "photo_path", nullable = false, length = 255)
     private String photoPath;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Size(max = 500)
+    @Column(name = "address", length = 500)
+    private String address;
+
 }

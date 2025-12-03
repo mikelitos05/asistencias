@@ -297,7 +297,7 @@ public class ExcelService {
 
         // Create new schedule
         Schedule newSchedule = new Schedule();
-        newSchedule.setProgramPark(programPark);
+        newSchedule.setProgramParks(Arrays.asList(programPark));
         newSchedule.setDays(days);
         newSchedule.setStartTime(start);
         newSchedule.setEndTime(end);

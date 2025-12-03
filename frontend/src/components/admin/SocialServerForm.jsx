@@ -84,6 +84,36 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
     }
   };
 
+  // Helper function to format period dates
+  const formatPeriodDisplay = (startDate, endDate) => {
+    if (!startDate || !endDate) return '';
+
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const startMonth = months[start.getMonth()];
+    const startYear = start.getFullYear();
+    const endMonth = months[end.getMonth()];
+    const endYear = end.getFullYear();
+
+    return `${startMonth} ${startYear} - ${endMonth} ${endYear}`;
+  };
+
+  // Get filtered parks based on selected program
+  const getFilteredParks = () => {
+    if (!selectedProgramId) return parks;
+
+    const selectedProgram = programs.find(p => p.id === parseInt(selectedProgramId));
+    if (selectedProgram && selectedProgram.parks) {
+      return parks.filter(park =>
+        selectedProgram.parks.some(pp => pp.id === park.id)
+      );
+    }
+    return parks;
+  };
+
   useEffect(() => {
     if (selectedProgramId) {
       const program = programs.find(p => p.id === parseInt(selectedProgramId));
@@ -170,9 +200,13 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
       // Create FormData object
       const data = new FormData();
 
+      // Set default values
+      const allergyValue = formData.allergy.trim() === '' ? 'NINGUNA' : formData.allergy;
+
       // Append JSON data as a blob part
       const jsonBlob = new Blob([JSON.stringify({
         ...formData,
+        allergy: allergyValue,
         badge: formData.badge === 'true',
         vest: formData.vest === '' ? -1 : parseInt(formData.vest),
         periodId: formData.periodId ? parseInt(formData.periodId) : null,
@@ -248,8 +282,8 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
                 </select>
               </div>
               <div className="form-group">
-                <label>Alergias</label>
-                <input type="text" name="allergy" value={formData.allergy} onChange={handleChange} />
+                <label>Alergias (Dejar vacío para ninguna)</label>
+                <input type="text" name="allergy" value={formData.allergy} onChange={handleChange} placeholder="Ninguna" />
               </div>
             </div>
             <div className="form-group">
@@ -277,16 +311,6 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
             <h3 className="section-title">Programa y Horario</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>Parque *</label>
-                <select name="parkId" value={formData.parkId} onChange={handleChange} required>
-                  <option value="">Seleccione un parque</option>
-                  {parks.map((park) => (
-                    <option key={park.id} value={park.id}>{park.parkName}</option>
-                  ))}
-                </select>
-                {errors.parkId && <span className="error">{errors.parkId}</span>}
-              </div>
-              <div className="form-group">
                 <label>Programa *</label>
                 <select value={selectedProgramId} onChange={handleProgramChange} required>
                   <option value="">Seleccione un programa</option>
@@ -299,6 +323,16 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
                     ))}
                 </select>
                 {errors.program && <span className="error">{errors.program}</span>}
+              </div>
+              <div className="form-group">
+                <label>Parque *</label>
+                <select name="parkId" value={formData.parkId} onChange={handleChange} required>
+                  <option value="">Seleccione un parque</option>
+                  {getFilteredParks().map((park) => (
+                    <option key={park.id} value={park.id}>{park.parkName}</option>
+                  ))}
+                </select>
+                {errors.parkId && <span className="error">{errors.parkId}</span>}
               </div>
             </div>
             <div className="form-row">
@@ -338,8 +372,8 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Fecha Inscripción (Opcional)</label>
-                <input type="date" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleChange} className="date-input" placeholder="Si se omite, se usará la fecha actual" />
+                <label>Fecha Inscripción (Opcional - Dejarlo vacío para usar fecha actual)</label>
+                <input type="date" name="enrollmentDate" value={formData.enrollmentDate} onChange={handleChange} className="date-input" />
               </div>
               <div className="form-group">
                 <label>Fecha Inicio (Opcional)</label>
@@ -391,7 +425,7 @@ const SocialServerForm = ({ socialServer, parks, programs, onSubmit, onCancel })
                     <option value="">Seleccione un periodo</option>
                     {periods.map(period => (
                       <option key={period.id} value={period.id}>
-                        {period.startDate} - {period.endDate}
+                        {formatPeriodDisplay(period.startDate, period.endDate)}
                       </option>
                     ))}
                   </select>

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Table(name = "schedules")
@@ -20,11 +21,10 @@ public class Schedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_park_id", nullable = false)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "schedule_program_parks", joinColumns = @JoinColumn(name = "schedule_id"), inverseJoinColumns = @JoinColumn(name = "program_park_id"))
     @JsonIgnore
-    private ProgramPark programPark;
+    private List<ProgramPark> programParks;
 
     @NotBlank
     @Column(nullable = false)
@@ -43,4 +43,10 @@ public class Schedule {
 
     @Column(name = "current_capacity")
     private Integer currentCapacity;
+
+    @Column(name = "career")
+    private String career;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 }
