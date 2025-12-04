@@ -12,6 +12,11 @@ const ProgramManagement = () => {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [selectedProgramId, setSelectedProgramId] = useState(null);
 
+    // Search and Filter states
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+    const [selectedParkFilter, setSelectedParkFilter] = useState('');
+
     // Edit states
     const [isEditingProgram, setIsEditingProgram] = useState(false);
     const [editingProgramId, setEditingProgramId] = useState(null);
@@ -20,16 +25,16 @@ const ProgramManagement = () => {
 
     const [programForm, setProgramForm] = useState({
         name: '',
-        parkIds: [] // Changed from parkId to parkIds array
+        parkIds: []
     });
     const [scheduleForm, setScheduleForm] = useState({
-        parkIds: [], // Cambiado a array para soportar múltiples parques
+        parkIds: [],
         days: '',
         startTime: '09:00',
         endTime: '17:00',
         capacity: '',
-        career: '', // Campo opcional para la carrera
-        notes: '' // Campo opcional para notas
+        career: '',
+        notes: ''
     });
 
     useEffect(() => {
@@ -84,13 +89,11 @@ const ProgramManagement = () => {
 
         if (!selectedProgram) return;
 
-        // Validate parks are selected
         if (!scheduleForm.parkIds || scheduleForm.parkIds.length === 0) {
             alert('Debe seleccionar al menos un parque');
             return;
         }
 
-        // Validate all parks belong to program
         for (const parkId of scheduleForm.parkIds) {
             const parkExists = selectedProgram.parks.some(p => p.id === parkId);
             if (!parkExists) {
@@ -99,7 +102,6 @@ const ProgramManagement = () => {
             }
         }
 
-        // Validate capacity
         const newCapacity = parseInt(scheduleForm.capacity);
         if (!newCapacity || newCapacity <= 0) {
             alert('La capacidad debe ser un número mayor a 0');
@@ -195,7 +197,7 @@ const ProgramManagement = () => {
         setIsEditingSchedule(true);
         setEditingScheduleId(schedule.id);
         setScheduleForm({
-            parkIds: schedule.parkIds || [], // Usar los parkIds del horario
+            parkIds: schedule.parkIds || [],
             days: schedule.days,
             startTime: schedule.startTime,
             endTime: schedule.endTime,
@@ -247,6 +249,31 @@ const ProgramManagement = () => {
             return { ...prev, parkIds };
         });
     };
+    // Helper to normalize text (remove accents and lowercase)
+    const normalizeText = (text) => {
+        return text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+    };
+
+    // Filter Logic
+    const filteredPrograms = programs.filter(program => {
+        const term = normalizeText(searchTerm);
+        const matchesName = normalizeText(program.name).includes(term);
+
+        // Check if any schedule has a matching career
+        const matchesCareer = program.parks.some(park =>
+            park.schedules && park.schedules.some(schedule =>
+                normalizeText(schedule.career).includes(term)
+            )
+        );
+
+        const matchesSearch = matchesName || matchesCareer;
+        const matchesAvailability = showAvailableOnly ? program.currentCapacity > 0 : true;
+
+        // Park Filter
+        const matchesPark = selectedParkFilter ? program.parks.some(p => p.id === parseInt(selectedParkFilter)) : true;
+
+        return matchesSearch && matchesAvailability && matchesPark;
+    });
 
     return (
         <div className="program-management">
@@ -257,8 +284,40 @@ const ProgramManagement = () => {
                 </button>
             </div>
 
+            {/* Search and Filter Bar */}
+            <div className="filters-bar">
+                <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Buscar programa..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+
+                <select
+                    className="filter-select"
+                    value={selectedParkFilter}
+                    onChange={(e) => setSelectedParkFilter(e.target.value)}
+                >
+                    <option value="">Todos los parques</option>
+                    {parks.map(park => (
+                        <option key={park.id} value={park.id}>
+                            {park.parkName}
+                        </option>
+                    ))}
+                </select>
+                <label className="filter-toggle">
+                    <input
+                        type="checkbox"
+                        checked={showAvailableOnly}
+                        onChange={(e) => setShowAvailableOnly(e.target.checked)}
+                    />
+                    Solo con cupo disponible
+                </label>
+            </div>
+
             <div className="programs-list">
-                {programs.map(program => {
+                {filteredPrograms.map(program => {
                     // Logic to group unique schedules
                     const uniqueSchedules = [];
                     const scheduleIds = new Set();
@@ -300,6 +359,7 @@ const ProgramManagement = () => {
                                     <h3>{program.name}</h3>
                                 </div>
                                 <div className="program-actions">
+                                    {/* Reordering buttons removed */}
                                     <span className="capacity-badge">
                                         Capacidad Total: {program.currentCapacity}/{program.totalCapacity}
                                     </span>
@@ -322,8 +382,8 @@ const ProgramManagement = () => {
 
                             <div className="schedules-container">
                                 {Object.keys(groupedSchedules).length > 0 ? (
-                                    Object.values(groupedSchedules).map((group, index) => (
-                                        <div key={index} className="schedule-group-card">
+                                    Object.values(groupedSchedules).map((group, groupIndex) => (
+                                        <div key={groupIndex} className="schedule-group-card">
                                             <div className="schedule-parks-header">
                                                 {group.parkIds && group.parkIds.map(parkId => {
                                                     const park = program.parks.find(p => p.id === parkId);
@@ -404,128 +464,132 @@ const ProgramManagement = () => {
                 })}
             </div>
 
-            {showProgramModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>{isEditingProgram ? 'Editar Programa' : 'Nuevo Programa'}</h3>
-                        <form onSubmit={handleCreateProgram}>
-                            <div className="form-group">
-                                <label>Nombre</label>
-                                <input
-                                    type="text"
-                                    value={programForm.name}
-                                    onChange={e => setProgramForm({ ...programForm, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Parques (seleccione uno o más)</label>
-                                <div className="parks-checkbox-list">
-                                    {parks.map(park => (
-                                        <label key={park.id} className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={programForm.parkIds.includes(park.id)}
-                                                onChange={() => handleParkToggle(park.id)}
-                                            />
-                                            {park.parkName}
-                                        </label>
-                                    ))}
+            {
+                showProgramModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <h3>{isEditingProgram ? 'Editar Programa' : 'Nuevo Programa'}</h3>
+                            <form onSubmit={handleCreateProgram}>
+                                <div className="form-group">
+                                    <label>Nombre</label>
+                                    <input
+                                        type="text"
+                                        value={programForm.name}
+                                        onChange={e => setProgramForm({ ...programForm, name: e.target.value })}
+                                        required
+                                    />
                                 </div>
-                            </div>
-                            <div className="info-message">
-                                <strong>Nota:</strong> La capacidad total se calculará automáticamente según los horarios que agregue.
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" onClick={closeProgramModal}>Cancelar</button>
-                                <button type="submit">Guardar</button>
-                            </div>
-                        </form>
+                                <div className="form-group">
+                                    <label>Parques (seleccione uno o más)</label>
+                                    <div className="parks-checkbox-list">
+                                        {parks.map(park => (
+                                            <label key={park.id} className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={programForm.parkIds.includes(park.id)}
+                                                    onChange={() => handleParkToggle(park.id)}
+                                                />
+                                                {park.parkName}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="info-message">
+                                    <strong>Nota:</strong> La capacidad total se calculará automáticamente según los horarios que agregue.
+                                </div>
+                                <div className="modal-actions">
+                                    <button type="button" onClick={closeProgramModal}>Cancelar</button>
+                                    <button type="submit">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {showScheduleModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>{isEditingSchedule ? 'Editar Horario' : 'Agregar Horario'}</h3>
-                        <form onSubmit={handleAddSchedule}>
-                            <div className="form-group">
-                                <label>Parques {!isEditingSchedule && '(puede seleccionar varios)'}</label>
-                                <div className="parks-checkbox-list">
-                                    {selectedProgramId && programs.find(p => p.id === selectedProgramId)?.parks.map(park => (
-                                        <label key={park.id} className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={scheduleForm.parkIds.includes(park.id)}
-                                                onChange={() => handleScheduleParkToggle(park.id)}
-                                                disabled={isEditingSchedule && scheduleForm.parkIds.length > 0 && !scheduleForm.parkIds.includes(park.id)}
-                                            />
-                                            {park.parkName}
-                                        </label>
-                                    ))}
+            {
+                showScheduleModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <h3>{isEditingSchedule ? 'Editar Horario' : 'Agregar Horario'}</h3>
+                            <form onSubmit={handleAddSchedule}>
+                                <div className="form-group">
+                                    <label>Parques {!isEditingSchedule && '(puede seleccionar varios)'}</label>
+                                    <div className="parks-checkbox-list">
+                                        {selectedProgramId && programs.find(p => p.id === selectedProgramId)?.parks.map(park => (
+                                            <label key={park.id} className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={scheduleForm.parkIds.includes(park.id)}
+                                                    onChange={() => handleScheduleParkToggle(park.id)}
+                                                    disabled={isEditingSchedule && scheduleForm.parkIds.length > 0 && !scheduleForm.parkIds.includes(park.id)}
+                                                />
+                                                {park.parkName}
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Días</label>
-                                <DaySelector
-                                    value={scheduleForm.days}
-                                    onChange={(days) => setScheduleForm({ ...scheduleForm, days })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Hora Inicio</label>
-                                <TimePicker
-                                    label="Hora Inicio"
-                                    value={scheduleForm.startTime}
-                                    onChange={(time) => setScheduleForm({ ...scheduleForm, startTime: time })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Hora Fin</label>
-                                <TimePicker
-                                    label="Hora Fin"
-                                    value={scheduleForm.endTime}
-                                    onChange={(time) => setScheduleForm({ ...scheduleForm, endTime: time })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Capacidad</label>
-                                <input
-                                    type="number"
-                                    value={scheduleForm.capacity}
-                                    onChange={e => setScheduleForm({ ...scheduleForm, capacity: e.target.value })}
-                                    placeholder="Capacidad del horario"
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Carrera <span className="optional-label">(Opcional)</span></label>
-                                <input
-                                    type="text"
-                                    value={scheduleForm.career}
-                                    onChange={e => setScheduleForm({ ...scheduleForm, career: e.target.value })}
-                                    placeholder="Ej: Ingeniería en Sistemas"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Notas <span className="optional-label">(Opcional)</span></label>
-                                <textarea
-                                    value={scheduleForm.notes}
-                                    onChange={e => setScheduleForm({ ...scheduleForm, notes: e.target.value })}
-                                    placeholder="Información adicional sobre el horario..."
-                                    rows="3"
-                                />
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" onClick={closeScheduleModal}>Cancelar</button>
-                                <button type="submit">Guardar</button>
-                            </div>
-                        </form>
+                                <div className="form-group">
+                                    <label>Días</label>
+                                    <DaySelector
+                                        value={scheduleForm.days}
+                                        onChange={(days) => setScheduleForm({ ...scheduleForm, days })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Hora Inicio</label>
+                                    <TimePicker
+                                        label="Hora Inicio"
+                                        value={scheduleForm.startTime}
+                                        onChange={(time) => setScheduleForm({ ...scheduleForm, startTime: time })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Hora Fin</label>
+                                    <TimePicker
+                                        label="Hora Fin"
+                                        value={scheduleForm.endTime}
+                                        onChange={(time) => setScheduleForm({ ...scheduleForm, endTime: time })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Capacidad</label>
+                                    <input
+                                        type="number"
+                                        value={scheduleForm.capacity}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, capacity: e.target.value })}
+                                        placeholder="Capacidad del horario"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Carrera <span className="optional-label">(Opcional)</span></label>
+                                    <input
+                                        type="text"
+                                        value={scheduleForm.career}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, career: e.target.value })}
+                                        placeholder="Ej: Ingeniería en Sistemas"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Notas <span className="optional-label">(Opcional)</span></label>
+                                    <textarea
+                                        value={scheduleForm.notes}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, notes: e.target.value })}
+                                        placeholder="Información adicional sobre el horario..."
+                                        rows="3"
+                                    />
+                                </div>
+                                <div className="modal-actions">
+                                    <button type="button" onClick={closeScheduleModal}>Cancelar</button>
+                                    <button type="submit">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
