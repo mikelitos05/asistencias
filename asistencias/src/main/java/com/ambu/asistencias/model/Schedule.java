@@ -44,7 +44,7 @@ public class Schedule {
     @Column(name = "current_capacity")
     private Integer currentCapacity;
 
-    @Column(name = "career")
+    @Column(name = "career", length = 500)
     private String career;
 
     @Column(name = "notes", columnDefinition = "TEXT")

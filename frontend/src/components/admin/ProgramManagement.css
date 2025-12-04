@@ -9,10 +9,22 @@
     margin-bottom: 20px;
 }
 
+/* Masonry Layout */
 .programs-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    column-count: 3;
+    column-gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .programs-list {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .programs-list {
+        column-count: 1;
+    }
 }
 
 .program-card {
@@ -21,6 +33,16 @@
     padding: 25px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    /* Space between items in the same column */
+    break-inside: avoid;
+    /* Prevent card from splitting across columns */
+    display: inline-block;
+    /* Necessary for some browsers to respect break-inside */
+    width: 100%;
+    /* Ensure it takes full width of the column */
+    box-sizing: border-box;
+    /* Ensure padding doesn't increase width */
 }
 
 .program-header {
@@ -59,6 +81,11 @@
     font-weight: 500;
 }
 
+.park-badge.gray {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
 .program-actions {
     display: flex;
     gap: 10px;
@@ -70,6 +97,12 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    margin-top: 10px;
+    /* Add space above buttons */
+    justify-content: flex-end;
+    /* Align buttons to the right */
+    width: 100%;
+    /* Take full width */
 }
 
 .capacity-badge {
@@ -81,58 +114,59 @@
     font-weight: 500;
 }
 
-/* Park sections within program cards */
-.park-section {
-    margin-bottom: 20px;
-    padding: 15px;
+/* Schedule Group Card */
+.schedule-group-card {
     background: #f8fafc;
     border-radius: 6px;
-    border-left: 3px solid #3b82f6;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+    overflow: hidden;
 }
 
-.park-section h4 {
-    margin: 0 0 12px 0;
-    color: #1e40af;
-    font-size: 1.1em;
+.schedule-parks-header {
+    background: #eff6ff;
+    padding: 10px 15px;
+    border-bottom: 1px solid #dbeafe;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.park-section ul {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 0;
+.park-badge-header {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
 }
 
-.park-section li {
-    padding: 8px 0;
+.schedule-content {
+    padding: 15px;
+}
+
+.schedule-item-grouped {
     border-bottom: 1px solid #e2e8f0;
-    font-size: 0.9em;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
 }
 
-.park-section li:last-child {
+.schedule-item-grouped:last-child {
     border-bottom: none;
-}
-
-.schedule-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding-bottom: 0;
+    margin-bottom: 0;
 }
 
 .schedule-main-info {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    /* Stack info vertically */
+    gap: 5px;
     width: 100%;
 }
 
 .schedule-main-info>span {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -144,12 +178,15 @@
 }
 
 .schedule-career {
-    margin-left: 8px;
+    margin-left: 0;
+    /* Reset margin */
+    display: block;
+    /* Force new line */
+    margin-top: 4px;
     color: #059669;
     font-size: 0.9em;
     font-weight: 500;
     font-style: italic;
-    display: inline-block;
     word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -164,42 +201,21 @@
 }
 
 .schedule-notes {
-    background: #f8fafc;
+    background: white;
     border-left: 3px solid #8b5cf6;
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 0.85em;
     color: #475569;
     line-height: 1.5;
-    margin-top: 4px;
+    margin-top: 8px;
     word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     max-width: 100%;
-}
-
-.schedule-multi-parks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    margin-top: 6px;
-}
-
-.multi-parks-label {
-    font-size: 0.85em;
-    color: #64748b;
-    font-weight: 500;
-}
-
-.multi-park-badge {
-    background: #dbeafe;
-    color: #1e40af;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 500;
+    border: 1px solid #e2e8f0;
+    border-left-width: 3px;
 }
 
 .no-schedules {
@@ -208,9 +224,16 @@
     margin: 10px 0;
 }
 
-.schedules-section h4 {
-    margin: 10px 0;
+.unused-parks-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.unused-parks-section h4 {
+    margin: 0 0 10px 0;
     color: #64748b;
+    font-size: 0.95em;
 }
 
 .btn-sm {

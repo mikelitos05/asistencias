@@ -258,115 +258,150 @@ const ProgramManagement = () => {
             </div>
 
             <div className="programs-list">
-                {programs.map(program => (
-                    <div key={program.id} className="program-card">
-                        <div className="program-header">
-                            <div className="program-info">
-                                <h3>{program.name}</h3>
-                                <div className="parks-badges">
-                                    {program.parks.map(park => (
-                                        <span key={park.id} className="park-badge">{park.parkName}</span>
-                                    ))}
+                {programs.map(program => {
+                    // Logic to group unique schedules
+                    const uniqueSchedules = [];
+                    const scheduleIds = new Set();
+                    const parksWithSchedules = new Set();
+
+                    program.parks.forEach(park => {
+                        if (park.schedules) {
+                            park.schedules.forEach(schedule => {
+                                if (!scheduleIds.has(schedule.id)) {
+                                    scheduleIds.add(schedule.id);
+                                    uniqueSchedules.push(schedule);
+                                }
+                                if (schedule.parkIds && schedule.parkIds.includes(park.id)) {
+                                    parksWithSchedules.add(park.id);
+                                }
+                            });
+                        }
+                    });
+
+                    // Group schedules by park combination
+                    const groupedSchedules = {};
+                    uniqueSchedules.forEach(schedule => {
+                        const parkKey = schedule.parkIds ? schedule.parkIds.sort().join(',') : 'unknown';
+                        if (!groupedSchedules[parkKey]) {
+                            groupedSchedules[parkKey] = {
+                                parkIds: schedule.parkIds,
+                                schedules: []
+                            };
+                        }
+                        groupedSchedules[parkKey].schedules.push(schedule);
+                    });
+
+                    const parksWithoutSchedules = program.parks.filter(p => !parksWithSchedules.has(p.id));
+
+                    return (
+                        <div key={program.id} className="program-card">
+                            <div className="program-header">
+                                <div className="program-info">
+                                    <h3>{program.name}</h3>
+                                </div>
+                                <div className="program-actions">
+                                    <span className="capacity-badge">
+                                        Capacidad Total: {program.currentCapacity}/{program.totalCapacity}
+                                    </span>
+                                    <button
+                                        className="btn-soft-yellow"
+                                        onClick={() => openEditProgramModal(program)}
+                                        title="Editar Programa"
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        className="btn-soft-red"
+                                        onClick={() => handleDeleteProgram(program.id)}
+                                        title="Eliminar Programa"
+                                    >
+                                        Eliminar
+                                    </button>
                                 </div>
                             </div>
-                            <div className="program-actions">
-                                <span className="capacity-badge">
-                                    Capacidad Total: {program.currentCapacity}/{program.totalCapacity}
-                                </span>
-                                <button
-                                    className="btn-soft-yellow"
-                                    onClick={() => openEditProgramModal(program)}
-                                    title="Editar Programa"
-                                >
-                                    Editar
-                                </button>
-                                <button
-                                    className="btn-soft-red"
-                                    onClick={() => handleDeleteProgram(program.id)}
-                                    title="Eliminar Programa"
-                                >
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
 
-                        {/* Show parks with their schedules */}
-                        {program.parks.map(park => {
-                            const selectedProgram = program; // Reference to access in nested maps
-                            return (
-                                <div key={park.id} className="park-section">
-                                    <h4>{park.parkName}</h4>
-                                    {park.schedules && park.schedules.length > 0 ? (
-                                        <ul>
-                                            {park.schedules.map(schedule => (
-                                                <li key={schedule.id} className="schedule-item">
-                                                    <div className="schedule-main-info">
-                                                        <span>
-                                                            {formatDays(schedule.days)}: {schedule.startTime} - {schedule.endTime}
-                                                            {schedule.capacity && (
-                                                                <span className="schedule-capacity">
-                                                                    (Cap: {schedule.currentCapacity !== undefined ? schedule.currentCapacity : schedule.capacity}/{schedule.capacity})
-                                                                </span>
-                                                            )}
-                                                            {schedule.career && (
-                                                                <span className="schedule-career">
-                                                                    • {schedule.career}
-                                                                </span>
-                                                            )}
-                                                            {schedule.parkIds && schedule.parkIds.length > 1 && (
-                                                                <div className="schedule-multi-parks">
-                                                                    <span className="multi-parks-label">Parques:</span>
-                                                                    {schedule.parkIds.map(parkId => {
-                                                                        const parkInfo = selectedProgram.parks.find(p => p.id === parkId);
-                                                                        return parkInfo ? (
-                                                                            <span key={parkId} className="multi-park-badge">
-                                                                                {parkInfo.parkName}
-                                                                            </span>
-                                                                        ) : null;
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                        </span>
-                                                        <div className="schedule-actions">
-                                                            <button
-                                                                className="btn-soft-yellow"
-                                                                onClick={() => openEditScheduleModal(program.id, schedule, park.id)}
-                                                                title="Editar Horario"
-                                                            >
-                                                                Editar
-                                                            </button>
-                                                            <button
-                                                                className="btn-soft-red"
-                                                                onClick={() => handleDeleteSchedule(program.id, schedule.id)}
-                                                                title="Eliminar Horario"
-                                                            >
-                                                                Eliminar
-                                                            </button>
+                            <div className="schedules-container">
+                                {Object.keys(groupedSchedules).length > 0 ? (
+                                    Object.values(groupedSchedules).map((group, index) => (
+                                        <div key={index} className="schedule-group-card">
+                                            <div className="schedule-parks-header">
+                                                {group.parkIds && group.parkIds.map(parkId => {
+                                                    const park = program.parks.find(p => p.id === parkId);
+                                                    return park ? (
+                                                        <span key={parkId} className="park-badge-header">{park.parkName}</span>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                            <div className="schedule-content">
+                                                {group.schedules.map(schedule => (
+                                                    <div key={schedule.id} className="schedule-item-grouped">
+                                                        <div className="schedule-main-info">
+                                                            <span>
+                                                                {formatDays(schedule.days)}: {schedule.startTime} - {schedule.endTime}
+                                                                {schedule.capacity && (
+                                                                    <span className="schedule-capacity">
+                                                                        (Cap: {schedule.currentCapacity !== undefined ? schedule.currentCapacity : schedule.capacity}/{schedule.capacity})
+                                                                    </span>
+                                                                )}
+                                                                {schedule.career && (
+                                                                    <span className="schedule-career">
+                                                                        • {schedule.career}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <div className="schedule-actions">
+                                                                <button
+                                                                    className="btn-soft-yellow"
+                                                                    onClick={() => openEditScheduleModal(program.id, schedule)}
+                                                                    title="Editar Horario"
+                                                                >
+                                                                    Editar
+                                                                </button>
+                                                                <button
+                                                                    className="btn-soft-red"
+                                                                    onClick={() => handleDeleteSchedule(program.id, schedule.id)}
+                                                                    title="Eliminar Horario"
+                                                                >
+                                                                    Eliminar
+                                                                </button>
+                                                            </div>
                                                         </div>
+                                                        {schedule.notes && (
+                                                            <div className="schedule-notes">
+                                                                📝 {schedule.notes}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {schedule.notes && (
-                                                        <div className="schedule-notes">
-                                                            📝 {schedule.notes}
-                                                        </div>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="no-schedules">No hay horarios configurados para este parque</p>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="no-schedules">No hay horarios configurados.</p>
+                                )}
+                            </div>
 
-                        <button
-                            className="btn-sm btn-secondary"
-                            onClick={() => openCreateScheduleModal(program.id)}
-                        >
-                            Agregar Horario
-                        </button>
-                    </div>
-                ))}
+                            {parksWithoutSchedules.length > 0 && (
+                                <div className="unused-parks-section">
+                                    <h4>Parques sin horarios:</h4>
+                                    <div className="parks-badges">
+                                        {parksWithoutSchedules.map(park => (
+                                            <span key={park.id} className="park-badge gray">{park.parkName}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                className="btn-sm btn-secondary"
+                                onClick={() => openCreateScheduleModal(program.id)}
+                                style={{ marginTop: '15px' }}
+                            >
+                                Agregar Horario
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
 
             {showProgramModal && (

@@ -62,14 +62,14 @@ const AttendanceList = ({ attendances, onUserClick, showUserColumn = true }) => 
               <th>Fecha</th>
               <th>Hora</th>
               <th>Tipo</th>
-              <th>Ubicación</th>
+
               <th>Foto</th>
             </tr>
           </thead>
           <tbody>
             {attendances.length === 0 ? (
               <tr>
-                <td colSpan={showUserColumn ? 7 : 6} className="no-data">
+                <td colSpan={showUserColumn ? 6 : 5} className="no-data">
                   No hay asistencias registradas
                 </td>
               </tr>
@@ -94,26 +94,7 @@ const AttendanceList = ({ attendances, onUserClick, showUserColumn = true }) => 
                       {ATTENDANCE_TYPE_LABELS[attendance.type] || attendance.type}
                     </span>
                   </td>
-                  <td>
-                    {attendance.address ? (
-                      <div className="location-cell">
-                        <span className="address-text">{attendance.address}</span>
-                        {attendance.latitude && attendance.longitude && (
-                          <a
-                            href={`https://www.google.com/maps?q=${attendance.latitude},${attendance.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="map-link"
-                            title="Ver en Google Maps"
-                          >
-                            🗺️
-                          </a>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="no-location">No disponible</span>
-                    )}
-                  </td>
+
                   <td>
                     {attendance.photoPath && (
                       <button

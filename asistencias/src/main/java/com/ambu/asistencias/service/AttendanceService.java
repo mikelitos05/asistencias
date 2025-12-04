@@ -138,9 +138,7 @@ public class AttendanceService {
                 .timestamp(LocalDateTime.now())
                 .type(attendanceType)
                 .photoPath(photoPath)
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .address(request.getAddress())
+
                 .build();
 
         Attendance savedAttendance = attendanceRepository.save(attendance);
@@ -163,9 +161,7 @@ public class AttendanceService {
                 .type(attendance.getType().name())
                 .message(message)
                 .photoPath(attendance.getPhotoPath())
-                .latitude(attendance.getLatitude())
-                .longitude(attendance.getLongitude())
-                .address(attendance.getAddress())
+
                 .build();
     }
 

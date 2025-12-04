@@ -20,9 +20,4 @@ public class AttendanceRequest {
 
     private String type; // "CHECK_IN" o "CHECK_OUT"
 
-    private Double latitude;
-
-    private Double longitude;
-
-    private String address;
 }

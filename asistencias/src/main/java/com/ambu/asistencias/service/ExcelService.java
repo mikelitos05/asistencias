@@ -152,8 +152,10 @@ public class ExcelService {
                 .orElseThrow(() -> new RuntimeException("Program not found: " + programName));
 
         // Find the schedule that matches program, park, days, and hours
-        Schedule schedule = findOrCreateSchedule(program, park, days, hours);
-        socialServer.setSchedule(schedule);
+        Schedule schedule = findSchedule(program, park, days, hours);
+        if (schedule != null) {
+            socialServer.setSchedule(schedule);
+        }
         socialServer.setPark(park);
 
         // 10. Se entrego gafete (Si/No)
@@ -246,7 +248,7 @@ public class ExcelService {
         socialServer.setCompletionLetterId(getStringCellValue(row, 26));
 
         // Decrement capacity if social server is ACTIVO
-        if (socialServer.getStatus() == SocialServer.Status.ACTIVO) {
+        if (socialServer.getStatus() == SocialServer.Status.ACTIVO && schedule != null) {
             // Decrement schedule capacity
             if (schedule.getCurrentCapacity() != null && schedule.getCurrentCapacity() > 0) {
                 schedule.setCurrentCapacity(schedule.getCurrentCapacity() - 1);
@@ -259,10 +261,10 @@ public class ExcelService {
         socialServerRepository.save(socialServer);
     }
 
-    private Schedule findOrCreateSchedule(Program program, Park park, String days, String hours) {
+    private Schedule findSchedule(Program program, Park park, String days, String hours) {
         // Parse hours "08:00 - 12:00"
-        LocalTime start = LocalTime.of(9, 0);
-        LocalTime end = LocalTime.of(13, 0);
+        LocalTime start = null;
+        LocalTime end = null;
 
         if (hours != null && hours.contains("-")) {
             String[] parts = hours.split("-");
@@ -270,24 +272,30 @@ public class ExcelService {
                 start = LocalTime.parse(parts[0].trim());
                 end = LocalTime.parse(parts[1].trim());
             } catch (Exception e) {
-                // Fallback
+                return null;
             }
+        } else {
+            return null;
         }
 
-        // Find or create ProgramPark
-        com.ambu.asistencias.model.ProgramPark programPark = programParkRepository
-                .findByProgramIdAndParkId(program.getId(), park.getId())
-                .orElseGet(() -> {
-                    com.ambu.asistencias.model.ProgramPark newPP = new com.ambu.asistencias.model.ProgramPark();
-                    newPP.setProgram(program);
-                    newPP.setPark(park);
-                    return programParkRepository.save(newPP);
-                });
+        // Find ProgramPark - ONLY find, do not create
+        Optional<com.ambu.asistencias.model.ProgramPark> programParkOpt = programParkRepository
+                .findByProgramIdAndParkId(program.getId(), park.getId());
+
+        if (!programParkOpt.isPresent()) {
+            return null;
+        }
+
+        com.ambu.asistencias.model.ProgramPark programPark = programParkOpt.get();
+
+        // Normalize days from Excel
+        String normalizedDays = normalizeDays(days);
 
         // Check if similar schedule exists
         if (programPark.getSchedules() != null) {
             for (Schedule s : programPark.getSchedules()) {
-                if (s.getDays().equalsIgnoreCase(days) &&
+                // Compare normalized days or direct match
+                if ((s.getDays().equalsIgnoreCase(days) || s.getDays().equalsIgnoreCase(normalizedDays)) &&
                         s.getStartTime().equals(start) &&
                         s.getEndTime().equals(end)) {
                     return s;
@@ -295,15 +303,19 @@ public class ExcelService {
             }
         }
 
-        // Create new schedule
-        Schedule newSchedule = new Schedule();
-        newSchedule.setProgramParks(Arrays.asList(programPark));
-        newSchedule.setDays(days);
-        newSchedule.setStartTime(start);
-        newSchedule.setEndTime(end);
-        newSchedule.setCapacity(50); // Default
-        newSchedule.setCurrentCapacity(50);
-        return scheduleRepository.save(newSchedule);
+        return null;
+    }
+
+    private String normalizeDays(String days) {
+        if (days == null)
+            return "";
+        String d = days.trim().toUpperCase();
+        if (d.equals("L-V"))
+            return "Lunes a Viernes";
+        if (d.equals("S-D"))
+            return "Sabado a Domingo";
+        // Add more mappings if needed
+        return days;
     }
 
     private EmergencyContact parseEmergencyContact(String str) {
